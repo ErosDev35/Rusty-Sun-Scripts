@@ -28,6 +28,7 @@ public class PlayerCharacterController : MonoBehaviour
 
     //Movements Section
     public float speed = 50f;
+    public float speedDebuff = 100;
     public float sprintMultiplier = 1;
     public float jumpHeight = 3f;
     public float stamina = 100f;
@@ -194,6 +195,7 @@ public class PlayerCharacterController : MonoBehaviour
         oldMovement = move;
 
         float speedApplied = (sliding) ? speed * 1.5f * slideFrames : speed;
+        speedApplied *= speedDebuff;
 
         playerVelocity = new Vector3(move.x * speedApplied, playerVelocity.y, move.z * speedApplied);
 
@@ -473,8 +475,7 @@ public class PlayerCharacterController : MonoBehaviour
             }
             else
             {
-                float damageDivided = damage / bodyPart.Count;
-                print(damageDivided + " damage par membres car on a " + bodyPart.Count + " membres touchés");
+                float damageInflicted = damage;
 
                 foreach (string partStr in bodyPart)
                 {
@@ -482,8 +483,11 @@ public class PlayerCharacterController : MonoBehaviour
                     {
                         if (part.bodyPartName.Equals(partStr))
                         {
+                            float damageFragment = (bodyPart.IndexOf(partStr) + 1 >= bodyPart.Count) ? damageInflicted : UnityEngine.Random.Range(0, damageInflicted);
                             bodyPartSelect.Add(part);
-                            bodyPartAmountOfDamage.Add(part, (damageDispersal) ? damageDivided : damage);
+                            bodyPartAmountOfDamage.Add(part, (damageDispersal) ? damageFragment : damage);
+                            print("on inflige " + damageFragment + " à " + partStr + " ce qui représente " + damageFragment / damage * 100 + " des dégats totaux (" + damage + ")");
+                            damageInflicted -= damageFragment;
                         }
                     }
                 }
@@ -649,5 +653,14 @@ public class PlayerCharacterController : MonoBehaviour
     {
         yield return new WaitForSeconds(time);
         onMeleeCooldown = false;
+    }
+    void BodyPartDebuffGestion()
+    {
+        float speedBaseDebuff = 100f;
+        float meleeDamageBaseDebuff = 100f;
+        float meleeSpeedBaseDebuff = 100f;
+
+        //Apply all debufs
+        speedDebuff = speedBaseDebuff;
     }
 }
