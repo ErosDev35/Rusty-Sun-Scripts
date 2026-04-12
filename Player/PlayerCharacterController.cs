@@ -112,16 +112,22 @@ public class PlayerCharacterController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!LookingAtUi())
-        {
-            Move();
-            Jump();
-            ItemCheck();
-            HandSlots();
-            DoorCheck();
-            BuildCheck();
-            ShouldKeepSliding();
-        }
+        if (!LookingAtUi()) PrimaryActions();
+        SecondaryActions();
+    }
+
+    void PrimaryActions()
+    {
+        Move();
+        Jump();
+        ItemCheck();
+        HandSlots();
+        DoorCheck();
+        BuildCheck();
+        ShouldKeepSliding();
+    }
+    void SecondaryActions()
+    {
         Camera();
         Stamina();
         BagCheck();
@@ -134,6 +140,7 @@ public class PlayerCharacterController : MonoBehaviour
         CheckOnBody();
         PlayerAudio();
         MeleeAttack();
+        BodyPartDebuffGestion();
     }
     void Camera()
     {
@@ -171,7 +178,7 @@ public class PlayerCharacterController : MonoBehaviour
     void ShouldKeepSliding()
     {
         if (IsSliding()) sliding = true;
-        if (Mathf.Abs(playerVelocity.x) + Mathf.Abs(playerVelocity.z) <= 0.5f || !isCrouching()) sliding = false;
+        if (Mathf.Abs(playerVelocity.x) + Mathf.Abs(playerVelocity.z) <= 0.5f || !isCrouching() || speedDebuff < 50f) sliding = false;
     }
     bool IsSliding()
     {
@@ -195,7 +202,7 @@ public class PlayerCharacterController : MonoBehaviour
         oldMovement = move;
 
         float speedApplied = (sliding) ? speed * 1.5f * slideFrames : speed;
-        speedApplied *= speedDebuff;
+        speedApplied *= speedDebuff / 100;
 
         playerVelocity = new Vector3(move.x * speedApplied, playerVelocity.y, move.z * speedApplied);
 
@@ -429,7 +436,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public bool isRunning()
     {
-        bool running = ((Input.GetAxis("Sprint") != 0 && stamina < maxStamina) && !outOfBreath && !IsFalling());
+        bool running = ((Input.GetAxis("Sprint") != 0 && stamina < maxStamina) && !outOfBreath && !IsFalling() && speedDebuff > 40f);
         running = (running && !(isCrouching() && sliding) && !IsAiming()) ? (inputMove.x != 0 || inputMove.z != 0) : false;
         running = (LookingAtUi()) ? false : running;
         return running;
@@ -660,7 +667,26 @@ public class PlayerCharacterController : MonoBehaviour
         float meleeDamageBaseDebuff = 100f;
         float meleeSpeedBaseDebuff = 100f;
 
+        //Get all lowerBodyParts debuff (non c'est pas une ia qui écrit ça c'est vrm moi juste je suis trop english)
+        List<BodyPart> lowerBodyparts = new List<BodyPart>() { findPlayerBodyPartByStr("Right Leg"), findPlayerBodyPartByStr("Left Leg") };
+
+        foreach (BodyPart part in lowerBodyparts)
+        {
+            speedBaseDebuff -= (part.bodyPartState == BodyPartState.BROKEN) ? 40 : Mathf.Abs(part.bodyPartHealth - 100) / 3;
+        }
+
         //Apply all debufs
         speedDebuff = speedBaseDebuff;
+    }
+    BodyPart findPlayerBodyPartByStr(string bodyPartStr)
+    {
+        foreach (BodyPart part in playerHealth.bodyParts)
+        {
+            if (part.bodyPartName.Equals(bodyPartStr))
+            {
+                return part;
+            }
+        }
+        return null;
     }
 }
