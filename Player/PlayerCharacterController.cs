@@ -50,6 +50,7 @@ public class PlayerCharacterController : MonoBehaviour
     private float slideFrames = 2;
     private float oldVerticalSpeed = 0;
     private bool wasGrounded = true;
+    public float timeBeforeJumpCancel = 0;
     //.....................................................
 
     //Inventory / Item / Hands Section 
@@ -164,10 +165,10 @@ public class PlayerCharacterController : MonoBehaviour
 
         transform.rotation = Quaternion.Euler(0, cMCam.transform.rotation.y, cMCam.transform.rotation.z);
 
-        cMChannelPerlin.AmplitudeGain = map(explosionCam + Mathf.Abs(inputMove.x) + Mathf.Abs(inputMove.z) + ((playerVelocity.y < -1f) ? (playerVelocity.y * -1) : 0), 0, 15, 0.25f, 1.5f);
+        cMChannelPerlin.AmplitudeGain = map(explosionCam + 10 / playerHealth.health + Mathf.Abs(inputMove.x) + Mathf.Abs(inputMove.z) + ((playerVelocity.y < -1f) ? (playerVelocity.y * -1) : 0), 0, 15, 0.25f, 1.5f);
         cMChannelPerlin.FrequencyGain = cMChannelPerlin.AmplitudeGain / 5f + explosionCam * 0.25f + ((isRunning()) ? 0.025f : 0) + stamina / 500;
 
-        cMChannelPerlin.AmplitudeGain = (LookingAtUi()) ? 0.5f : cMChannelPerlin.AmplitudeGain;
+        cMChannelPerlin.AmplitudeGain = (LookingAtUi()) ? 0.45f : cMChannelPerlin.AmplitudeGain;
         cMChannelPerlin.FrequencyGain = (LookingAtUi()) ? 0.1f : cMChannelPerlin.FrequencyGain;
 
         firearmKnockback = (firearmKnockback > 0) ? firearmKnockback - Time.deltaTime * 25 : 0;
@@ -256,10 +257,14 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Jump()
     {
-        if (isJumping() && (groundedPlayer || Physics.Raycast(transform.position + new Vector3(0, -1, 0), transform.TransformDirection(Vector3.down), 0.25f, LayerMask.GetMask("Default"))))
+        bool onGround = groundedPlayer || Physics.Raycast(transform.position + new Vector3(0, -1, 0), transform.TransformDirection(Vector3.down), 0.25f, LayerMask.GetMask("Default"));
+        if (isJumping() && (onGround || timeBeforeJumpCancel < 0.4f))
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -2.0f * gravityValue);
+            timeBeforeJumpCancel = 1;
         }
+
+        timeBeforeJumpCancel = (!onGround) ? timeBeforeJumpCancel + Time.deltaTime : 0;
     }
     void BagCheck()
     {
@@ -644,6 +649,7 @@ public class PlayerCharacterController : MonoBehaviour
         if (!LookingAtUi() && !isRunning() && Input.GetKeyDown(KeyCode.Mouse0) && !handItem && !onMeleeCooldown)
         {
             SendMeleeDamage(1);
+            GameObject.Find("UI").GetComponent<PlayerAnimations>().MeleeAnimation();
         }
     }
     void SendMeleeDamage(float meleeDamage)
@@ -652,7 +658,7 @@ public class PlayerCharacterController : MonoBehaviour
         RaycastHit hit;
         if (Physics.BoxCast(cMCam.transform.position, new Vector3(0.25f, 0.5f, 0.25f), cMCam.transform.forward, out hit) && hit.transform.GetComponent<Shootable>() && Vector3.Distance(cMCam.transform.position, hit.transform.position) < 3)
         {
-            hit.transform.GetComponent<Shootable>().shootInteraction(meleeDamage, cMCam.transform.position);
+            hit.transform.GetComponent<Shootable>().shootInteraction(meleeDamage, cMCam.transform.position, 15);
         }
         StartCoroutine(MeleeCooldown(0.5f));
     }
@@ -664,8 +670,8 @@ public class PlayerCharacterController : MonoBehaviour
     void BodyPartDebuffGestion()
     {
         float speedBaseDebuff = 100f;
-        float meleeDamageBaseDebuff = 100f;
-        float meleeSpeedBaseDebuff = 100f;
+        //float meleeDamageBaseDebuff = 100f;
+        //float meleeSpeedBaseDebuff = 100f;
 
         //Get all lowerBodyParts debuff (non c'est pas une ia qui écrit ça c'est vrm moi juste je suis trop english)
         List<BodyPart> lowerBodyparts = new List<BodyPart>() { findPlayerBodyPartByStr("Right Leg"), findPlayerBodyPartByStr("Left Leg") };

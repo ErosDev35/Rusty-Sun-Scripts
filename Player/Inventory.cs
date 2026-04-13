@@ -344,6 +344,7 @@ public class Inventory : MonoBehaviour
             customItemBehaviour.itemName = itemGrab.customItemBehaviour.itemName;
             customItemBehaviour.activatedBehaviour = itemGrab.customItemBehaviour.activatedBehaviour;
             customItemBehaviour.musicTime = itemGrab.customItemBehaviour.musicTime;
+            customItemBehaviour.musics = itemGrab.customItemBehaviour.musics;
 
             item.customItemBehaviour = customItemBehaviour;
         }
@@ -420,17 +421,20 @@ public class Inventory : MonoBehaviour
             ItemSelectedSlot = null;
         }
     }
+    public void EjectSelectedSlot()
+    {
+        EjectItem(ItemSelectedSlot ,true);
+    }
     public GameObject EjectItem(Slot itemToEjectSlot = null, bool ejectStack = true)
     {
         gameInterface.SoundSync();
         if (itemToEjectSlot && itemToEjectSlot.slotItem != null)
         {
             PlayerCharacterController playerController = player.GetComponent<PlayerCharacterController>();
-            Vector3 ejectItemPosition = (!playerController.isLookingAtBag) ? handItemPosition.position : playerController.cMCam.transform.position + playerController.cMCam.transform.forward * 2;
-
-            var ejectedItem = Instantiate(itemToEjectSlot.slotItem.itemPrefab, ejectItemPosition, playerController.cMCam.rotation * gameInterface.handsItem.transform.GetChild(0).transform.localRotation);
-            
-            print(ejectedItem.transform.rotation);
+            Vector3 ejectItemPosition = (!playerController.isLookingAtBag) ? handItemPosition.GetChild(0).position : player.transform.position + playerController.cMCam.transform.forward * 1.25f;
+            Quaternion rotationInstantiate = handItemPosition.GetChild(0).rotation;
+            print(rotationInstantiate);
+            var ejectedItem = Instantiate(itemToEjectSlot.slotItem.itemPrefab, ejectItemPosition, rotationInstantiate);
             
             CopyItemProperties(itemToEjectSlot.slotItem, ejectedItem, (!ejectStack && itemToEjectSlot.slotItem.itemNumber >= 2));
 

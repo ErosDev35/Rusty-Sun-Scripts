@@ -4,7 +4,7 @@ public class Shootable : MonoBehaviour
 {
     public string shootableType;
 
-    public void shootInteraction(float damage = 0, Vector3 hitPos = new Vector3())
+    public void shootInteraction(float damage = 0, Vector3 hitPos = new Vector3(), float pushForce = 100)
     {
         switch (shootableType)
         {
@@ -14,7 +14,7 @@ public class Shootable : MonoBehaviour
                 break;
 
             case "Item":
-                GetComponent<Rigidbody>().AddForce((5f - (float)GetComponent<Item>().baseWeight / 10) * (this.transform.position - hitPos), ForceMode.Impulse);
+                GetComponent<Rigidbody>().AddForce( (pushForce / 100) * ((5f - (float)GetComponent<Item>().baseWeight / 10) * (this.transform.position - hitPos)), ForceMode.Impulse);
                 break;
 
             case "Interactable":

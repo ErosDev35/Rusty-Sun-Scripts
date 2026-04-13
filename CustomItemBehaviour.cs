@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CustomItemBehaviour : MonoBehaviour
@@ -9,6 +10,7 @@ public class CustomItemBehaviour : MonoBehaviour
     public float musicTime = 0;
     public GameInterface gameInterface;
     public bool activateCooldown = false;
+    public List<AudioClip> musics = new List<AudioClip>();
     void Start()
     {
         gameInterface = GameObject.Find("UI").GetComponent<GameInterface>();
@@ -38,11 +40,13 @@ public class CustomItemBehaviour : MonoBehaviour
                         musicTime = 0;
                     }
                     else
-                        musicSource.Play();
+                    print(musics.Count);
+                    musicSource.clip = musics[Random.Range(0, musics.Count)];
+                    musicSource.Play();
                     break;
             }
             gameInterface.SoundSync();
-            activatedBehaviour = !activatedBehaviour; 
+            activatedBehaviour = !activatedBehaviour;
         }
     }
     IEnumerator disableActivateCooldown(float time)
