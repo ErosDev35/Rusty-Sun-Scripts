@@ -5,6 +5,8 @@ using UnityEngine;
 public class CustomItemBehaviour : MonoBehaviour
 {
     public string itemName;
+    public string itemInteraction = "";
+    public List<string> itemInteractionStr;
     public bool activatedBehaviour;
     public AudioSource musicSource;
     public float musicTime = 0;
@@ -30,6 +32,8 @@ public class CustomItemBehaviour : MonoBehaviour
         if (!activateCooldown)
         {
             activateCooldown = true;
+            activatedBehaviour = !activatedBehaviour;
+            itemInteraction = itemInteractionStr[(activatedBehaviour)? 1 : 0];
             StartCoroutine(disableActivateCooldown(0.25f));
             switch (itemName)
             {
@@ -46,7 +50,6 @@ public class CustomItemBehaviour : MonoBehaviour
                     break;
             }
             gameInterface.SoundSync();
-            activatedBehaviour = !activatedBehaviour;
         }
     }
     IEnumerator disableActivateCooldown(float time)

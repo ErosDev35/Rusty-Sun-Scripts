@@ -129,6 +129,27 @@ public class GameInterface : MonoBehaviour
         Visualizer();
         SoundSync();
         Pause();
+        SlotColoring();
+    }
+    void SlotColoring()
+    {
+        Inventory bag = this.bag.GetComponent<Inventory>();
+        List<GameObject> inventorySlots = bag.slots;
+        foreach (GameObject slot in bag.equippedSlots) inventorySlots.Add(slot);
+        foreach (GameObject slot in inventorySlots)
+        {
+            if (bag.ItemSelectedSlot.slotItem != null)
+            {
+                float distance = Vector2.Distance(slot.transform.position, Input.mousePosition);
+                slot.GetComponent<Image>().color = (bag.TypeCorrespondanceCheck(bag.ItemSelectedSlot.slotItem, slot.GetComponent<Slot>().item_type) || slot.GetComponent<Slot>().item_type == "any")
+                ? new Color(0.65f, 0.65f, 0.65f) : ColorTransition(new Color(0.65f, 0.65f, 0.65f), new Color(0.60f, 0, 0), 50 / distance);
+            }
+            else slot.GetComponent<Image>().color = new Color(0.65f, 0.65f, 0.65f);
+        }
+    }
+    Color ColorTransition(Color beginColor, Color endColor, float progression)
+    {
+        return Color.Lerp(beginColor, endColor, progression);
     }
     void Pause()
     {
@@ -325,9 +346,9 @@ public class GameInterface : MonoBehaviour
         itemName.text = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? itemPlayerLooking.GetComponent<Item>().itemName + ((itemPlayerLooking.GetComponent<Item>().itemNumber >= 2) ? " (" + itemPlayerLooking.GetComponent<Item>().itemNumber + ")" : "")
         : (itemPlayerLooking.GetComponent<Door>() != null) ? itemPlayerLooking.GetComponent<Door>().doorName : itemPlayerLooking.GetComponent<Build>().buildName : "";
 
-        itemName.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text =
-        (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab"
-        : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to enter" : "[E] to interact" : "";
+        string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to enter" : "[E] to interact" : "";
+        descriptor += (itemPlayerLooking != null && itemPlayerLooking.GetComponent<CustomItemBehaviour>()) ? " [F] " + itemPlayerLooking.GetComponent<CustomItemBehaviour>().itemInteraction : "";
+        itemName.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = descriptor;
 
         //FPS item visualizer
 

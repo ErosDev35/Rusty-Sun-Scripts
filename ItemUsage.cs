@@ -16,7 +16,7 @@ public class ItemUsage : MonoBehaviour
         player = GameObject.Find("Player").transform;
         playerAnimations = GameObject.Find("UI").GetComponent<PlayerAnimations>();
     }
-    public void ItemUse(Slot slot, Item item, PlayerCharacterController player)
+    public void ItemUse(Slot slot = null, Item item = null, PlayerCharacterController player = null)
     {
         if ((item.oneHanded || !item.oneHanded && !item.twoHanded) && player.IsAiming())
         {
@@ -37,8 +37,8 @@ public class ItemUsage : MonoBehaviour
                 ReplaceArmorItem(item, player, slot);
                 break;
 
-            case "Weapon":
-                print("J'utilise un weapon ! ");
+            case "Melee":
+                MeleeAttack(player);
                 break;
 
             case "Firearm":
@@ -120,6 +120,17 @@ public class ItemUsage : MonoBehaviour
             player.throwingFrames = 1;
         }
     }
+    void MeleeAttack(PlayerCharacterController player)
+    {
+        MeleeWeapon meleeWeapon = GetComponent<MeleeWeapon>();
+        if (meleeWeapon.canShoot)
+        {
+            meleeWeapon.canShoot = false;
+            StartCoroutine(meleeWeapon.betweenShotsWaitTime());
+            player.MeleeAttack((float) meleeWeapon.damage, true);
+        }
+        
+    }
     public void Shoot(PlayerCharacterController player)
     {
         Firearm gun = GetComponent<Firearm>();
@@ -159,21 +170,21 @@ public class ItemUsage : MonoBehaviour
                 i++;
             }
 
-            var stepSound = new GameObject();
+            var fireSound = new GameObject();
 
-            stepSound.transform.name = "fireSoundEffect";
-            stepSound.transform.position = cMCam.transform.position;
-            stepSound.transform.parent = GameObject.Find("SoundEffect").transform;
+            fireSound.transform.name = "fireSoundEffect";
+            fireSound.transform.position = cMCam.transform.position;
+            fireSound.transform.parent = GameObject.Find("SoundEffect").transform;
 
-            AudioSource stepSoundAudio = stepSound.AddComponent<AudioSource>();
-            Sound sound = stepSound.AddComponent<Sound>();
+            AudioSource fireSoundAudio = fireSound.AddComponent<AudioSource>();
+            Sound sound = fireSound.AddComponent<Sound>();
             sound.soundRadius = gun.soundRadius;
 
             StartCoroutine(sound.KissYourself(10));
 
-            stepSoundAudio.clip = gun.firearmShootingSound;
+            fireSoundAudio.clip = gun.firearmShootingSound;
 
-            stepSoundAudio.Play();
+            fireSoundAudio.Play();
             sound.SoundStart();
 
             gun.ammo -= 1;

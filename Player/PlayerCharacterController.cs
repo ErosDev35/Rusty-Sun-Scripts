@@ -301,10 +301,17 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void ItemCheck()
     {
-        if (isLookingAtAnItem() && Input.GetKeyDown("e"))
+        if (isLookingAtAnItem())
         {
-            Inventory inventorySystem = inventory.GetComponent<Inventory>();
-            inventorySystem.AddItem(itemLookingAt);
+            if (Input.GetKeyDown("e"))
+            {
+                Inventory inventorySystem = inventory.GetComponent<Inventory>();
+                inventorySystem.AddItem(itemLookingAt);  
+            }
+            if (Input.GetKeyDown("f") && itemLookingAt.GetComponent<CustomItemBehaviour>())
+            {
+                itemLookingAt.GetComponent<ItemUsage>().ItemUse(null, itemLookingAt.GetComponent<Item>(), this);
+            }  
         }
     }
     void BuildCheck()
@@ -644,15 +651,21 @@ public class PlayerCharacterController : MonoBehaviour
         stepTime += (stepTime >= timeNeeded) ? 0 : Time.deltaTime;
         stepTime = (inputMove.x + inputMove.z == 0) ? 0 : stepTime;
     }
-    void MeleeAttack()
+    public void MeleeAttack(float damage = 1, bool meleeWeapon = false)
     {
-        if (!LookingAtUi() && !isRunning() && Input.GetKeyDown(KeyCode.Mouse0) && !handItem && !onMeleeCooldown)
+        if (!LookingAtUi() && !isRunning() && Input.GetKeyDown(KeyCode.Mouse0) && ((!handItem && !onMeleeCooldown) || meleeWeapon))
         {
-            SendMeleeDamage(1);
-            GameObject.Find("UI").GetComponent<PlayerAnimations>().MeleeAnimation();
+            SendMeleeDamage(damage);
+
+            PlayerAnimations playerAnimations = GameObject.Find("UI").GetComponent<PlayerAnimations>();
+            if(!meleeWeapon)
+            playerAnimations.MeleeAnimationHands();
+            else 
+            playerAnimations.MeleeAnimationWeapon();
+
         }
     }
-    void SendMeleeDamage(float meleeDamage)
+    public void SendMeleeDamage(float meleeDamage)
     {
         onMeleeCooldown = true;
         RaycastHit hit;

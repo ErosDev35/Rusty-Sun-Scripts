@@ -64,8 +64,13 @@ public class PlayerAnimations : MonoBehaviour
     {
         armsAnim.Play("EatingArms");
     }
-    public void MeleeAnimation()
+    public void MeleeAnimationHands()
     {
+        armsAnim.Play("ArmAttackMelee");
+    }
+    public void MeleeAnimationWeapon()
+    {
+        //Tu changera plus tard quand tu aura une animation
         armsAnim.Play("ArmAttackMelee");
     }
 }

@@ -272,6 +272,7 @@ public class Inventory : MonoBehaviour
         Firearm firearm = (itemGrab.firearm != null) ? slot.AddComponent<Firearm>() : null;
         Medicine medicine = (itemGrab.medicine != null) ? slot.AddComponent<Medicine>() : null;
         CustomItemBehaviour customItemBehaviour = (itemGrab.customItemBehaviour != null) ? slot.AddComponent<CustomItemBehaviour>() : null;
+        MeleeWeapon meleeWeapon = (itemGrab.meleeWeapon != null) ? slot.AddComponent<MeleeWeapon>() : null;
 
         AudioSource audioSource = (itemGrab.GetComponent<AudioSource>()) ? (slot.transform.parent)? slot.AddComponent<AudioSource>() : slot.GetComponent<AudioSource>() : null;
 
@@ -345,6 +346,8 @@ public class Inventory : MonoBehaviour
             customItemBehaviour.activatedBehaviour = itemGrab.customItemBehaviour.activatedBehaviour;
             customItemBehaviour.musicTime = itemGrab.customItemBehaviour.musicTime;
             customItemBehaviour.musics = itemGrab.customItemBehaviour.musics;
+            customItemBehaviour.itemInteraction = itemGrab.customItemBehaviour.itemInteraction;
+            customItemBehaviour.itemInteractionStr = itemGrab.customItemBehaviour.itemInteractionStr;
 
             item.customItemBehaviour = customItemBehaviour;
         }
@@ -356,6 +359,15 @@ public class Inventory : MonoBehaviour
             audioSource.spread = itemGrab.GetComponent<AudioSource>().spread;
             audioSource.loop = itemGrab.GetComponent<AudioSource>().loop;
             audioSource.time = itemGrab.GetComponent<AudioSource>().time;
+        }
+        if (meleeWeapon)
+        {
+            meleeWeapon.swingSound = itemGrab.meleeWeapon.swingSound;
+            meleeWeapon.firerate = itemGrab.meleeWeapon.firerate;
+            meleeWeapon.knockback = itemGrab.meleeWeapon.knockback;
+            meleeWeapon.canShoot = itemGrab.meleeWeapon.canShoot;
+            meleeWeapon.damage = itemGrab.meleeWeapon.damage;
+            meleeWeapon.canShoot = true;
         }
 
         return item;
