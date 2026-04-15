@@ -13,6 +13,7 @@ public class Ennemy : MonoBehaviour
     public Animator animator;
     public Vector3 suspectPoint;
     public int timesStepWasHeard = 0;
+    public GameObject bloodParticleContact;
     void Start()
     {
         ennemyPathfinding = GetComponent<EnnemyPathfinding>();

@@ -9,6 +9,7 @@ using AYellowpaper.SerializedCollections;
 using UnityEngine.EventSystems;
 using System;
 using UnityEditor;
+using NUnit.Framework;
 public class GameInterface : MonoBehaviour
 {
     public GameObject player;
@@ -71,6 +72,7 @@ public class GameInterface : MonoBehaviour
     public Transform[] bodyCheckDescription;
     public Transform contextMenuCheckBody;
     public OptionData optionData;
+    public bool isPlayerBleeding = false;
     void Start()
     {
         bag.gameObject.SetActive(false);
@@ -140,9 +142,8 @@ public class GameInterface : MonoBehaviour
         {
             if (bag.ItemSelectedSlot.slotItem != null)
             {
-                float distance = Vector2.Distance(slot.transform.position, Input.mousePosition);
                 slot.GetComponent<Image>().color = (bag.TypeCorrespondanceCheck(bag.ItemSelectedSlot.slotItem, slot.GetComponent<Slot>().item_type) || slot.GetComponent<Slot>().item_type == "any")
-                ? new Color(0.65f, 0.65f, 0.65f) : ColorTransition(new Color(0.65f, 0.65f, 0.65f), new Color(0.60f, 0, 0), 50 / distance);
+                ? new Color(0.65f, 0.65f, 0.65f) : ColorTransition(new Color(0.65f, 0.65f, 0.65f), new Color(0.85f, 0, 0), 50 / Vector2.Distance(slot.transform.position, Input.mousePosition));
             }
             else slot.GetComponent<Image>().color = new Color(0.65f, 0.65f, 0.65f);
         }
@@ -492,6 +493,7 @@ public class GameInterface : MonoBehaviour
                     {
                         if (bodyPart.ShouldBleed()) isPlayerBleeding = true;
                     }
+                    this.isPlayerBleeding = isPlayerBleeding;
                     need.gameObject.SetActive(isPlayerBleeding);
                     break;
             }

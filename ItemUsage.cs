@@ -127,9 +127,9 @@ public class ItemUsage : MonoBehaviour
         {
             meleeWeapon.canShoot = false;
             StartCoroutine(meleeWeapon.betweenShotsWaitTime());
-            player.MeleeAttack((float) meleeWeapon.damage, true);
+            player.MeleeAttack((float)meleeWeapon.damage, true);
         }
-        
+
     }
     public void Shoot(PlayerCharacterController player)
     {
@@ -152,9 +152,9 @@ public class ItemUsage : MonoBehaviour
                     if (hit.transform.GetComponent<Shootable>() != null || (hit.transform.parent != null && hit.transform.parent.GetComponent<Shootable>()))
                     {
                         if (hit.transform.GetComponent<Shootable>())
-                            hit.transform.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point);
+                            hit.transform.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point, player.transform.position);
                         else
-                            hit.transform.parent.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point);
+                            hit.transform.parent.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point, player.transform.position);
                     }
                 }
 

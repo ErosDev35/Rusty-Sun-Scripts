@@ -18,13 +18,13 @@ public class CustomItemBehaviour : MonoBehaviour
         gameInterface = GameObject.Find("UI").GetComponent<GameInterface>();
         musicSource = GetComponent<AudioSource>();
         itemName = GetComponent<Item>().itemName;
-    }
-    public void Update()
-    {
         if (activatedBehaviour && musicSource.time == 0)
         {
             musicSource.Play();
         }
+    }
+    public void Update()
+    {
         musicTime = musicSource.time;
     }
     public void OnActivate()

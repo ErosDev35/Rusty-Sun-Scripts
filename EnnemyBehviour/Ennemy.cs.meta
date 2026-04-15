@@ -1,2 +1,15 @@
 fileFormatVersion: 2
 guid: 88698fdf2ee72da4abe2a9f700521dae
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - ennemyParticle: {instanceID: 0}
+  - ennemyPathfinding: {instanceID: 0}
+  - animator: {instanceID: 0}
+  - bloodParticleContact: {fileID: 2073363111852296334, guid: c3d555cc71d33384aa86a99deb834aa7, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

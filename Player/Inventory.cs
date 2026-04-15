@@ -274,7 +274,7 @@ public class Inventory : MonoBehaviour
         CustomItemBehaviour customItemBehaviour = (itemGrab.customItemBehaviour != null) ? slot.AddComponent<CustomItemBehaviour>() : null;
         MeleeWeapon meleeWeapon = (itemGrab.meleeWeapon != null) ? slot.AddComponent<MeleeWeapon>() : null;
 
-        AudioSource audioSource = (itemGrab.GetComponent<AudioSource>()) ? (slot.transform.parent)? slot.AddComponent<AudioSource>() : slot.GetComponent<AudioSource>() : null;
+        AudioSource audioSource = (itemGrab.GetComponent<AudioSource>()) ? (slot.transform.parent) ? slot.AddComponent<AudioSource>() : slot.GetComponent<AudioSource>() : null;
 
         item.itemName = itemGrab.itemName;
         item.itemDescription = itemGrab.itemDescription;
@@ -404,6 +404,8 @@ public class Inventory : MonoBehaviour
     string InventoryWeightUpdate()
     {
         double weight = 0;
+        List<GameObject> inventorySlots = slots;
+        foreach (GameObject slot in equippedSlots) inventorySlots.Add(slot);
 
         foreach (GameObject slotGo in slots)
         {
@@ -411,14 +413,8 @@ public class Inventory : MonoBehaviour
             {
                 weight += slotGo.GetComponent<Slot>().slotItem.itemTotalWeight;
             }
-        }
-
-        foreach (GameObject slotGo in equippedSlots)
-        {
-            if (slotGo.GetComponent<Slot>().slotItem != null)
-            {
+            else if (slotGo.GetComponent<Slot>().slotItem != null)
                 weight += slotGo.GetComponent<Slot>().slotItem.itemTotalWeight * slotGo.GetComponent<Slot>().slotItem.equippedWeightMultiplierValue;
-            }
         }
 
         return weight.ToString();
@@ -435,7 +431,7 @@ public class Inventory : MonoBehaviour
     }
     public void EjectSelectedSlot()
     {
-        EjectItem(ItemSelectedSlot ,true);
+        EjectItem(ItemSelectedSlot, true);
     }
     public GameObject EjectItem(Slot itemToEjectSlot = null, bool ejectStack = true)
     {
@@ -447,7 +443,7 @@ public class Inventory : MonoBehaviour
             Quaternion rotationInstantiate = handItemPosition.GetChild(0).rotation;
             print(rotationInstantiate);
             var ejectedItem = Instantiate(itemToEjectSlot.slotItem.itemPrefab, ejectItemPosition, rotationInstantiate);
-            
+
             CopyItemProperties(itemToEjectSlot.slotItem, ejectedItem, (!ejectStack && itemToEjectSlot.slotItem.itemNumber >= 2));
 
             if (!ejectStack && itemToEjectSlot.slotItem.itemNumber >= 2)

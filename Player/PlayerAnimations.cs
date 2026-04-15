@@ -3,12 +3,14 @@ using UnityEngine;
 public class PlayerAnimations : MonoBehaviour
 {
     public PlayerCharacterController playerController;
+    public Transform passiveBleedingParticle;
     public GameInterface gameInterface;
     public Animator armsAnim;
     public Animator camAnim;
     void Update()
     {
         GestionAnimatorBools();
+        PlayerBleedingPassive();
     }
 
     void GestionAnimatorBools()
@@ -72,5 +74,11 @@ public class PlayerAnimations : MonoBehaviour
     {
         //Tu changera plus tard quand tu aura une animation
         armsAnim.Play("ArmAttackMelee");
+    }
+    void PlayerBleedingPassive()
+    {
+        ParticleSystem ps = passiveBleedingParticle.GetComponent<ParticleSystem>();
+        var em = ps.emission;
+        em.enabled = gameInterface.isPlayerBleeding;
     }
 }

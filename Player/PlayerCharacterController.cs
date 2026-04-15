@@ -306,12 +306,12 @@ public class PlayerCharacterController : MonoBehaviour
             if (Input.GetKeyDown("e"))
             {
                 Inventory inventorySystem = inventory.GetComponent<Inventory>();
-                inventorySystem.AddItem(itemLookingAt);  
+                inventorySystem.AddItem(itemLookingAt);
             }
             if (Input.GetKeyDown("f") && itemLookingAt.GetComponent<CustomItemBehaviour>())
             {
                 itemLookingAt.GetComponent<ItemUsage>().ItemUse(null, itemLookingAt.GetComponent<Item>(), this);
-            }  
+            }
         }
     }
     void BuildCheck()
@@ -653,15 +653,15 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public void MeleeAttack(float damage = 1, bool meleeWeapon = false)
     {
-        if (!LookingAtUi() && !isRunning() && Input.GetKeyDown(KeyCode.Mouse0) && ((!handItem && !onMeleeCooldown) || meleeWeapon))
+        if (!LookingAtUi() && Input.GetKeyDown(KeyCode.Mouse0) && ((!handItem && !onMeleeCooldown) || meleeWeapon))
         {
             SendMeleeDamage(damage);
 
             PlayerAnimations playerAnimations = GameObject.Find("UI").GetComponent<PlayerAnimations>();
-            if(!meleeWeapon)
-            playerAnimations.MeleeAnimationHands();
-            else 
-            playerAnimations.MeleeAnimationWeapon();
+            if (!meleeWeapon)
+                playerAnimations.MeleeAnimationHands();
+            else
+                playerAnimations.MeleeAnimationWeapon();
 
         }
     }
@@ -671,7 +671,7 @@ public class PlayerCharacterController : MonoBehaviour
         RaycastHit hit;
         if (Physics.BoxCast(cMCam.transform.position, new Vector3(0.25f, 0.5f, 0.25f), cMCam.transform.forward, out hit) && hit.transform.GetComponent<Shootable>() && Vector3.Distance(cMCam.transform.position, hit.transform.position) < 3)
         {
-            hit.transform.GetComponent<Shootable>().shootInteraction(meleeDamage, cMCam.transform.position, 15);
+            hit.transform.GetComponent<Shootable>().shootInteraction(meleeDamage, hit.point, transform.position, 15);
         }
         StartCoroutine(MeleeCooldown(0.5f));
     }
