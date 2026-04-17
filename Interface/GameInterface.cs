@@ -136,17 +136,23 @@ public class GameInterface : MonoBehaviour
     void SlotColoring()
     {
         Inventory bag = this.bag.GetComponent<Inventory>();
-        List<GameObject> inventorySlots = bag.slots;
-        foreach (GameObject slot in bag.equippedSlots) inventorySlots.Add(slot);
-        foreach (GameObject slot in inventorySlots)
+        foreach (GameObject slot in bag.slots)
         {
-            if (bag.ItemSelectedSlot.slotItem != null)
-            {
-                slot.GetComponent<Image>().color = (bag.TypeCorrespondanceCheck(bag.ItemSelectedSlot.slotItem, slot.GetComponent<Slot>().item_type) || slot.GetComponent<Slot>().item_type == "any")
-                ? new Color(0.65f, 0.65f, 0.65f) : ColorTransition(new Color(0.65f, 0.65f, 0.65f), new Color(0.85f, 0, 0), 50 / Vector2.Distance(slot.transform.position, Input.mousePosition));
-            }
-            else slot.GetComponent<Image>().color = new Color(0.65f, 0.65f, 0.65f);
+            changeSlotColor(slot, bag);
         }
+        foreach (GameObject slot in bag.equippedSlots)
+        {
+            changeSlotColor(slot, bag);
+        }
+    }
+    void changeSlotColor(GameObject slot, Inventory bag)
+    {
+        if (bag.ItemSelectedSlot.slotItem != null)
+        {
+            slot.GetComponent<Image>().color = (bag.TypeCorrespondanceCheck(bag.ItemSelectedSlot.slotItem, slot.GetComponent<Slot>().item_type) || slot.GetComponent<Slot>().item_type == "any")
+            ? new Color(0.65f, 0.65f, 0.65f) : ColorTransition(new Color(0.65f, 0.65f, 0.65f), new Color(0.85f, 0, 0), 50 / Vector2.Distance(slot.transform.position, Input.mousePosition) + 0.5f);
+        }
+        else slot.GetComponent<Image>().color = new Color(0.65f, 0.65f, 0.65f);
     }
     Color ColorTransition(Color beginColor, Color endColor, float progression)
     {
@@ -377,13 +383,14 @@ public class GameInterface : MonoBehaviour
             foreach (Transform child in itemHand.itemPrefab.transform)
             {
                 int result;
-                int.TryParse(child.name, out result);
-
-                handsItem.GetChild(0).GetChild(result - 1).GetComponent<MeshFilter>().mesh = child.GetComponent<MeshFilter>().sharedMesh;
-                handsItem.GetChild(0).GetChild(result - 1).localScale = child.localScale;
-                handsItem.GetChild(0).GetChild(result - 1).GetComponent<MeshRenderer>().material = child.GetComponent<MeshRenderer>().sharedMaterial;
-                handsItem.GetChild(0).GetChild(result - 1).localPosition = child.transform.localPosition;
-                handsItem.GetChild(0).GetChild(result - 1).localRotation = child.transform.localRotation;
+                if(int.TryParse(child.name, out result)){
+                    Transform model = handsItem.GetChild(0).GetChild(result - 1);
+                    model.GetComponent<MeshFilter>().mesh = child.GetComponent<MeshFilter>().sharedMesh;
+                    model.localScale = child.localScale;
+                    model.GetComponent<MeshRenderer>().material = child.GetComponent<MeshRenderer>().sharedMaterial;
+                    model.localPosition = child.transform.localPosition;
+                    model.localRotation = child.transform.localRotation;
+                }
             }
         }
 

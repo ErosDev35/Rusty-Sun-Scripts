@@ -59,6 +59,7 @@ public class Inventory : MonoBehaviour
 
     void BagUpdate()
     {
+        print("On update le sac");
         bagWearOld = bagWear;
         foreach (Transform child in bag.transform)
         {
@@ -331,6 +332,10 @@ public class Inventory : MonoBehaviour
             firearm.bulletToFire = itemGrab.firearm.bulletToFire;
             firearm.firearmShootingSound = itemGrab.firearm.firearmShootingSound;
             firearm.canShoot = true;
+            firearm.bulletShellEjectParticle = itemGrab.firearm.bulletShellEjectParticle;
+            firearm.muzzleFlashDistance = itemGrab.firearm.muzzleFlashDistance;
+            firearm.muzzleFlashParticle = itemGrab.firearm.muzzleFlashParticle;
+            firearm.bulletShellEjectTiming = itemGrab.firearm.bulletShellEjectTiming;
 
             item.firearm = firearm;
         }
@@ -404,16 +409,16 @@ public class Inventory : MonoBehaviour
     string InventoryWeightUpdate()
     {
         double weight = 0;
-        List<GameObject> inventorySlots = slots;
-        foreach (GameObject slot in equippedSlots) inventorySlots.Add(slot);
-
         foreach (GameObject slotGo in slots)
         {
             if (slotGo.GetComponent<Slot>().slotItem != null && slotGo.name != "SlotHotbar")
             {
                 weight += slotGo.GetComponent<Slot>().slotItem.itemTotalWeight;
             }
-            else if (slotGo.GetComponent<Slot>().slotItem != null)
+        }
+        foreach (GameObject slotGo in equippedSlots)
+        {
+            if (slotGo.GetComponent<Slot>().slotItem != null)
                 weight += slotGo.GetComponent<Slot>().slotItem.itemTotalWeight * slotGo.GetComponent<Slot>().slotItem.equippedWeightMultiplierValue;
         }
 

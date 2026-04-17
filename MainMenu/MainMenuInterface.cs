@@ -6,6 +6,7 @@ using TMPro;
 using Unity.Cinemachine;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -19,6 +20,8 @@ namespace AYellowpaper.SerializedCollections
         [SerializeField] int mainTabIndex = 0;
         [SerializeField] int optionsTabIndex = 1;
         [SerializeField] List<Transform> volumeSelector;
+        [SerializeField] List<Transform> simpleSliderLabels;
+        [SerializeField] List<String> simpleSliderLabelsExtra;
         [SerializeField] TextMeshProUGUI gameVersion;
         [SerializedDictionary("Item Name", "Index")]
         [SerializeField] SerializedDictionary<string, GameObject> saveStateDict;
@@ -165,6 +168,10 @@ namespace AYellowpaper.SerializedCollections
         void Interface()
         {
             gameVersion.text = "V." + Application.version;
+            foreach(Transform label in simpleSliderLabels)
+            {
+                label.GetComponent<TextMeshProUGUI>().text = label.parent.GetChild(0).GetComponent<Slider>().value.ToString() + simpleSliderLabelsExtra[simpleSliderLabels.IndexOf(label)];
+            }
         }
         void SoundInterface()
         {

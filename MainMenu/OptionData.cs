@@ -7,6 +7,8 @@ public class OptionData
     public float masterVolume = 0.5f;
     public float sfxVolume = 0.5f;
     public float musicVolume = 0.5f;
+    public float fov = 90;
+    public float mouseSensitivity = 100;
     public float volumeMute = 0;
     public float screenResolution = 0;
     public float screenMode = 1;

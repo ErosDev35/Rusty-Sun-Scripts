@@ -51,6 +51,7 @@ public class PlayerCharacterController : MonoBehaviour
     private float oldVerticalSpeed = 0;
     private bool wasGrounded = true;
     public float timeBeforeJumpCancel = 0;
+    bool onGround = true;
     //.....................................................
 
     //Inventory / Item / Hands Section 
@@ -194,8 +195,10 @@ public class PlayerCharacterController : MonoBehaviour
         Vector2 input = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
         Vector3 move = new Vector3(input.x, 0, input.y);
 
-        move = cMCam.TransformDirection(move);
-        move = Vector3.ClampMagnitude(move, 1f);
+        Vector3 forward = Vector3.ProjectOnPlane(cMCam.forward, Vector3.up).normalized;
+        Vector3 right = Vector3.ProjectOnPlane(cMCam.right, Vector3.up).normalized;
+
+        move = forward * move.z + right * move.x;
 
         slideFrames = (!sliding) ? 2 : slideFrames - ((slideFrames > 0) ? Time.deltaTime : 0);
         move = (!sliding) ? move : oldMovement;
@@ -257,7 +260,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Jump()
     {
-        bool onGround = groundedPlayer || Physics.Raycast(transform.position + new Vector3(0, -1, 0), transform.TransformDirection(Vector3.down), 0.25f, LayerMask.GetMask("Default"));
+        onGround = groundedPlayer || Physics.Raycast(transform.position + new Vector3(0, -1, 0), transform.TransformDirection(Vector3.down), 0.25f, LayerMask.GetMask("Terrain"));
         if (isJumping() && (onGround || timeBeforeJumpCancel < 0.4f))
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -2.0f * gravityValue);

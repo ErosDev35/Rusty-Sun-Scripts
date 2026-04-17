@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class EvilFlowerSprayAttack : MonoBehaviour
+public class FlowerProjectileAi : MonoBehaviour
 {
     public float damage = 0;
     public PlayerCharacterController player;

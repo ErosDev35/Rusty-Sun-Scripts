@@ -194,6 +194,14 @@ public class ItemUsage : MonoBehaviour
 
             StartCoroutine(gun.betweenShotsWaitTime());
 
+            //Particules
+
+            StartCoroutine(gun.bulletShellEject(player.transform, cMCam, gun.bulletShellEjectTiming));
+
+            var muzzleFlashParticle = Instantiate(gun.muzzleFlashParticle);
+            muzzleFlashParticle.gameObject.transform.position = player.transform.position + cMCam.transform.forward * gun.muzzleFlashDistance;
+            muzzleFlashParticle.gameObject.transform.rotation = cMCam.transform.rotation;
+
             player.AddExplosion(gun.knockback / 5);
         }
     }
