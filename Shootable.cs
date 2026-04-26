@@ -4,7 +4,7 @@ public class Shootable : MonoBehaviour
 {
     public string shootableType;
 
-    public void shootInteraction(float damage = 0, Vector3 hitPos = new Vector3(), Vector3 playerPos = new Vector3(), float pushForce = 100)
+    public void shootInteraction(float damage = 0, Vector3 hitPos = new Vector3(), Vector3 playerPos = new Vector3(), float pushForce = 10)
     {
         switch (shootableType)
         {

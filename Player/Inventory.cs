@@ -345,17 +345,6 @@ public class Inventory : MonoBehaviour
 
             item.medicine = medicine;
         }
-        if (customItemBehaviour)
-        {
-            customItemBehaviour.itemName = itemGrab.customItemBehaviour.itemName;
-            customItemBehaviour.activatedBehaviour = itemGrab.customItemBehaviour.activatedBehaviour;
-            customItemBehaviour.musicTime = itemGrab.customItemBehaviour.musicTime;
-            customItemBehaviour.musics = itemGrab.customItemBehaviour.musics;
-            customItemBehaviour.itemInteraction = itemGrab.customItemBehaviour.itemInteraction;
-            customItemBehaviour.itemInteractionStr = itemGrab.customItemBehaviour.itemInteractionStr;
-
-            item.customItemBehaviour = customItemBehaviour;
-        }
         if (audioSource)
         {
             audioSource.clip = itemGrab.GetComponent<AudioSource>().clip;
@@ -364,6 +353,16 @@ public class Inventory : MonoBehaviour
             audioSource.spread = itemGrab.GetComponent<AudioSource>().spread;
             audioSource.loop = itemGrab.GetComponent<AudioSource>().loop;
             audioSource.time = itemGrab.GetComponent<AudioSource>().time;
+        }
+        if (customItemBehaviour)
+        {
+            customItemBehaviour.itemName = itemGrab.customItemBehaviour.itemName;
+            customItemBehaviour.musicTime = itemGrab.customItemBehaviour.musicTime;
+            customItemBehaviour.musics = itemGrab.customItemBehaviour.musics;
+            customItemBehaviour.itemInteractionStr = itemGrab.customItemBehaviour.itemInteractionStr;
+            customItemBehaviour.musicSource = audioSource;
+
+            item.customItemBehaviour = customItemBehaviour;
         }
         if (meleeWeapon)
         {

@@ -17,6 +17,7 @@ public class PlayerCharacterController : MonoBehaviour
     private Vector2 rotation = Vector2.zero;
     private float yRotationLimit = 88f;
     private CinemachineBasicMultiChannelPerlin cMChannelPerlin;
+    private CinemachinePositionComposer cMPositionComposer;
     public float explosionCam = 0;
     //.....................................................
 
@@ -52,6 +53,7 @@ public class PlayerCharacterController : MonoBehaviour
     private bool wasGrounded = true;
     public float timeBeforeJumpCancel = 0;
     bool onGround = true;
+    public float tilting = 0;
     //.....................................................
 
     //Inventory / Item / Hands Section 
@@ -108,6 +110,7 @@ public class PlayerCharacterController : MonoBehaviour
         cMCam = GameObject.Find("Main Cinemachine Camera").transform;
         layerMaskGround = LayerMask.GetMask("Ground");
         cMChannelPerlin = cMCam.GetComponent<CinemachineBasicMultiChannelPerlin>();
+        cMPositionComposer = cMCam.GetComponent<CinemachinePositionComposer>();
         inventory = GameObject.Find("Bag");
     }
 
@@ -146,7 +149,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Camera()
     {
-        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") * (tiltDegree * -1) + addTilt : addTilt);
+        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") + ((IsAiming())? Input.GetAxis("Tilt") * 3 : 0) * (tiltDegree * -1) + addTilt : addTilt);
         Quaternion pan = Quaternion.Euler((!LookingAtUi()) ? Input.GetAxis("Vertical") * (panDegree) + addPan : addPan, 0, 0);
 
         if (!LookingAtUi())
@@ -166,16 +169,38 @@ public class PlayerCharacterController : MonoBehaviour
 
         transform.rotation = Quaternion.Euler(0, cMCam.transform.rotation.y, cMCam.transform.rotation.z);
 
-        cMChannelPerlin.AmplitudeGain = map(explosionCam + 10 / playerHealth.health + Mathf.Abs(inputMove.x) + Mathf.Abs(inputMove.z) + ((playerVelocity.y < -1f) ? (playerVelocity.y * -1) : 0), 0, 15, 0.25f, 1.5f);
-        cMChannelPerlin.FrequencyGain = cMChannelPerlin.AmplitudeGain / 5f + explosionCam * 0.25f + ((isRunning()) ? 0.025f : 0) + stamina / 500;
+        float shakeAmplitude = map(explosionCam + 20 / playerHealth.health + Mathf.Abs(inputMove.x) + Mathf.Abs(inputMove.z) + ((playerVelocity.y < -1f) ? (playerVelocity.y * -1) : 0), 0, 15, 0.25f, 1.5f);
+        float shakeFrequency = shakeAmplitude / 5f + explosionCam * 0.25f + ((isRunning()) ? 0.025f : 0) + stamina / 500;
 
-        cMChannelPerlin.AmplitudeGain = (LookingAtUi()) ? 0.45f : cMChannelPerlin.AmplitudeGain;
-        cMChannelPerlin.FrequencyGain = (LookingAtUi()) ? 0.1f : cMChannelPerlin.FrequencyGain;
+        shakeAmplitude = Mathf.Clamp(shakeAmplitude, 0, 1.1f);
+        shakeFrequency = Mathf.Clamp(shakeFrequency, 0, 1.1f);
+
+        cMChannelPerlin.AmplitudeGain = (LookingAtUi()) ? 0.45f : shakeAmplitude;
+        cMChannelPerlin.FrequencyGain = (LookingAtUi()) ? 0.1f : shakeFrequency;
 
         firearmKnockback = (firearmKnockback > 0) ? firearmKnockback - Time.deltaTime * 25 : 0;
 
         explosionCam -= (explosionCam > 0) ? Time.deltaTime * 4 : 0;
-        explosionCam = (explosionCam > 5) ? 5 : explosionCam;
+        explosionCam = Mathf.Clamp(explosionCam,0,3.5f);
+
+        CamTilt();
+    }
+    void CamTilt()
+    {
+        float tilt = Input.GetAxis("Tilt");
+        Vector3 right = Vector3.ProjectOnPlane(cMCam.right, Vector3.up).normalized;
+
+        RaycastHit hit;
+
+        float wallMultiplier = (Physics.Raycast(transform.position, right * tilt, out hit ,Vector3.Distance(transform.position, transform.position + right * tilt), LayerMask.GetMask("Terrain")))? 
+        Mathf.Round(hit.distance * 10) / 10 : 1;
+        Debug.DrawRay(transform.position, right * tilt);
+        print(wallMultiplier);
+        
+        Vector3 offset = (IsAiming())? right * tilt * wallMultiplier : Vector3.zero;
+        offset.y = 0.9f;
+        
+        cMPositionComposer.TargetOffset = offset;
     }
     void ShouldKeepSliding()
     {
@@ -195,10 +220,12 @@ public class PlayerCharacterController : MonoBehaviour
         Vector2 input = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
         Vector3 move = new Vector3(input.x, 0, input.y);
 
+        // Génération IA je suis tellement désolé mais je le savais pas comment faire
         Vector3 forward = Vector3.ProjectOnPlane(cMCam.forward, Vector3.up).normalized;
         Vector3 right = Vector3.ProjectOnPlane(cMCam.right, Vector3.up).normalized;
 
         move = forward * move.z + right * move.x;
+        // Fin de la génération
 
         slideFrames = (!sliding) ? 2 : slideFrames - ((slideFrames > 0) ? Time.deltaTime : 0);
         move = (!sliding) ? move : oldMovement;
@@ -274,6 +301,7 @@ public class PlayerCharacterController : MonoBehaviour
         if (Input.GetKeyDown("tab") && !preBuild && Mathf.Abs(playerVelocity.y) < 0.4f && (!LookingAtUi() || LookingAtUi() && isLookingAtBag))
         {
             isLookingAtBag = !isLookingAtBag;
+            gameInterface.mainTab = true;
             inventory.GetComponent<Inventory>().hoveredSlot = null;
             if (!isLookingAtBag)
             {
@@ -321,7 +349,7 @@ public class PlayerCharacterController : MonoBehaviour
     {
         if (isLookingAtABuild() && Input.GetKeyDown("e"))
         {
-            print("JE VEUX ENTRER");
+            buildLookingAt.GetComponent<BuildUsage>().BuildUse();
         }
     }
     void StatusCheck()
@@ -382,7 +410,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void EjectItem()
     {
-        if (Input.GetKeyDown("q"))
+        if (Input.GetKeyDown("q") && !IsAiming())
         {
             if (isLookingAtBag)
             {
@@ -597,7 +625,6 @@ public class PlayerCharacterController : MonoBehaviour
     void Build()
     {
         wantToBuild = ((Input.GetKeyDown("v") && ((!LookingAtUi()) || (LookingAtUi() && wantToBuild))) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToBuild)) ? !wantToBuild : wantToBuild;
-        preBuild = (Input.GetKeyDown("escape") && preBuild) ? !preBuild : preBuild;
     }
     public bool LookingAtUi()
     {

@@ -12,5 +12,6 @@ namespace AYellowpaper.SerializedCollections
         public GameObject buildPrefab;
         public BuildUsage buildUsage;
         public Vector3 buildOffset = Vector3.zero;
+        public string buildCategory;
     }
 }

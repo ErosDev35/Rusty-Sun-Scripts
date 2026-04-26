@@ -167,6 +167,7 @@ namespace AYellowpaper.SerializedCollections
         }
         void Interface()
         {
+            if(gameVersion)
             gameVersion.text = "V." + Application.version;
             foreach(Transform label in simpleSliderLabels)
             {

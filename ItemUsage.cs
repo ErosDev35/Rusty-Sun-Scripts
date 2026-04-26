@@ -26,6 +26,7 @@ public class ItemUsage : MonoBehaviour
         if (item.customItemBehaviour)
         {
             item.customItemBehaviour.OnActivate();
+            return;
         }
         switch (itemType)
         {
@@ -156,16 +157,16 @@ public class ItemUsage : MonoBehaviour
                         else
                             hit.transform.parent.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point, player.transform.position);
                     }
+                    
+                    GameObject hitInst = Instantiate(bulletCollisionParticle);
+
+                    hitInst.transform.position = hit.point;
+                    hitInst.transform.name = "hitPoint";
+
+                    hitInst.transform.rotation = player.GetComponent<PlayerCharacterController>().cMCam.rotation;
                 }
 
                 player.GetComponent<PlayerCharacterController>().firearmKnockback += Random.Range(gun.knockback / 2, gun.knockback);
-
-                GameObject hitInst = Instantiate(bulletCollisionParticle);
-
-                hitInst.transform.position = hit.point;
-                hitInst.transform.name = "hitPoint";
-
-                hitInst.transform.rotation = player.GetComponent<PlayerCharacterController>().cMCam.rotation;
 
                 i++;
             }

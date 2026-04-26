@@ -10,6 +10,7 @@ using UnityEngine.EventSystems;
 using System;
 using UnityEditor;
 using NUnit.Framework;
+using Unity.VisualScripting;
 public class GameInterface : MonoBehaviour
 {
     public GameObject player;
@@ -73,6 +74,10 @@ public class GameInterface : MonoBehaviour
     public Transform contextMenuCheckBody;
     public OptionData optionData;
     public bool isPlayerBleeding = false;
+    public Transform otherTab;
+    public bool mainTab = true;
+    public Container container;
+    public Transform slotPrefab;
     void Start()
     {
         bag.gameObject.SetActive(false);
@@ -160,7 +165,8 @@ public class GameInterface : MonoBehaviour
     }
     void Pause()
     {
-        if (Input.GetKeyDown(KeyCode.Escape)) gamePaused = !gamePaused;
+        if (Input.GetKeyDown(KeyCode.Escape) && !playerComponent.preBuild) gamePaused = !gamePaused;
+        else if (Input.GetKeyDown(KeyCode.Escape) && playerComponent.preBuild) playerComponent.preBuild = !playerComponent.preBuild;
         pauseMenu.SetActive(gamePaused);
         Time.timeScale = (gamePaused) ? 0 : 1;
     }
@@ -323,6 +329,9 @@ public class GameInterface : MonoBehaviour
             itemSelectedCursor.GetComponent<Image>().color = new Color(1, 1, 1, 0);
             itemSelectedCursor.GetChild(0).GetComponent<Image>().color = (playerComponent.inventory.GetComponent<Inventory>().ItemSelectedSlot.slotItem == null) ? new Color(1, 1, 1, 0) : new Color(1, 1, 1, 1);
         }
+
+        otherTab.GetChild(0).gameObject.SetActive(mainTab);
+        otherTab.GetChild(1).gameObject.SetActive(!mainTab);
     }
     void StaminaVisualizer()
     {
@@ -354,7 +363,8 @@ public class GameInterface : MonoBehaviour
         : (itemPlayerLooking.GetComponent<Door>() != null) ? itemPlayerLooking.GetComponent<Door>().doorName : itemPlayerLooking.GetComponent<Build>().buildName : "";
 
         string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to enter" : "[E] to interact" : "";
-        descriptor += (itemPlayerLooking != null && itemPlayerLooking.GetComponent<CustomItemBehaviour>()) ? " [F] " + itemPlayerLooking.GetComponent<CustomItemBehaviour>().itemInteraction : "";
+        descriptor += (itemPlayerLooking != null && itemPlayerLooking.GetComponent<CustomItemBehaviour>()) ? " [F] " + itemPlayerLooking.GetComponent<CustomItemBehaviour>().GetDescriptorState() : "";
+
         itemName.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = descriptor;
 
         //FPS item visualizer
@@ -383,7 +393,8 @@ public class GameInterface : MonoBehaviour
             foreach (Transform child in itemHand.itemPrefab.transform)
             {
                 int result;
-                if(int.TryParse(child.name, out result)){
+                if (int.TryParse(child.name, out result))
+                {
                     Transform model = handsItem.GetChild(0).GetChild(result - 1);
                     model.GetComponent<MeshFilter>().mesh = child.GetComponent<MeshFilter>().sharedMesh;
                     model.localScale = child.localScale;
@@ -626,13 +637,13 @@ public class GameInterface : MonoBehaviour
 
         if (itemHand && itemHand.itemName == "Boombox")
         {
-            if (itemHand.customItemBehaviour.activatedBehaviour && !audioSource.isPlaying)
+            if (audioSource && itemHand.customItemBehaviour.musicSource.clip && !audioSource.isPlaying)
             {
                 audioSource.clip = (itemHand.customItemBehaviour && itemHand.customItemBehaviour.musicSource.clip) ? itemHand.customItemBehaviour.musicSource.clip : null;
                 audioSource.time = itemHand.customItemBehaviour.musicTime;
                 audioSource.Play();
             }
-            else if (!itemHand.customItemBehaviour.activatedBehaviour)
+            else if (!itemHand.customItemBehaviour.musicSource.clip)
             {
                 audioSource.Stop();
             }
@@ -643,6 +654,38 @@ public class GameInterface : MonoBehaviour
         {
             audioSource.Stop();
             audioSource.clip = null;
+        }
+    }
+    public void ContainerTabInit()
+    {
+        Transform tab = otherTab.GetChild(1);
+        List<Slot> slots = container.containerSlots;
+        List<Slot> newSlots = new List<Slot>();
+        List<Transform> slotsTrans = new List<Transform>();
+        Vector3 defaultSlotPos = new Vector3(310, 0, 0);
+
+        foreach (Slot slot in slots)
+        {
+            if (!slot) newSlots.Insert(slots.IndexOf(slot), container.AddComponent<Slot>());
+        }
+
+        container.containerSlots = newSlots;
+
+        foreach (Transform child in tab) if (child.GetSiblingIndex() != 0)
+        {
+            Destroy(child.gameObject);
+        }
+
+        foreach (Slot slot in slots)
+        {
+            print("création d'un nouveau slot");
+            var slotInst = Instantiate(slotPrefab, tab);
+            slotsTrans.Add(slotInst);
+            Transform previousSlotTrans = (slotsTrans[slots.IndexOf(slot) - 1] != null)? slotsTrans[slots.IndexOf(slot) - 1] : null;
+
+            Vector3 newPos = (previousSlotTrans != null)? previousSlotTrans.transform.position + previousSlotTrans.transform.localScale : defaultSlotPos;
+            print(newPos);
+            slotInst.transform.localPosition = newPos;
         }
     }
 }
