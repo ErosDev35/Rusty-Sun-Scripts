@@ -11,6 +11,7 @@ public class CustomItemBehaviour : MonoBehaviour
     public GameInterface gameInterface;
     public bool activateCooldown = false;
     public List<AudioClip> musics = new List<AudioClip>();
+    public AudioClip oldClip = null;
     void Start()
     {
         gameInterface = GameObject.Find("UI").GetComponent<GameInterface>();
@@ -32,7 +33,7 @@ public class CustomItemBehaviour : MonoBehaviour
         if (!activateCooldown)
         {
             activateCooldown = true;
-            StartCoroutine(disableActivateCooldown(0.5f));
+            StartCoroutine(disableActivateCooldown(0.05f));
 
             switch (itemName)
             {
@@ -45,7 +46,9 @@ public class CustomItemBehaviour : MonoBehaviour
                     }
                     else{
                         musicSource.clip = musics[Random.Range(0, musics.Count)];
+                        while(musicSource.clip == oldClip) musicSource.clip = musics[Random.Range(0, musics.Count)];
                         musicSource.Play();
+                        oldClip = musicSource.clip;
                     }
                     break;
             }

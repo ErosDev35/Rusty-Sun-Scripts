@@ -110,6 +110,7 @@ public class Inventory : MonoBehaviour
                     {
                         RemoveItemComponent(selectedSlot.transform);
                         slotTo.GetComponent<Slot>().slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
+                        if(slotTo.GetComponent<Slot>().slotToSync) slotTo.GetComponent<Slot>().slotToSync.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
                     }
                     else
                     {
@@ -120,6 +121,7 @@ public class Inventory : MonoBehaviour
                         RemoveItemComponent(slotTo.transform);
 
                         slotTo.GetComponent<Slot>().slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.gameObject);
+                        if(slotTo.GetComponent<Slot>().slotToSync) slotTo.GetComponent<Slot>().slotToSync.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.GetComponent<Slot>().slotToSync.gameObject);
                         RemoveItemComponent(slotExchange.transform);
                     }
                 }
@@ -127,6 +129,11 @@ public class Inventory : MonoBehaviour
                 {
                     slotItem = CopyItemProperties(selectedSlot.slotItem, slotTo.gameObject);
                     slotTo.GetComponent<Slot>().slotItem = slotItem;
+                    if (slotTo.GetComponent<Slot>().slotToSync)
+                    {
+                        print("on syncronise " + slotTo.GetComponent<Slot>().slotToSync);
+                        slotTo.GetComponent<Slot>().slotToSync.slotItem = CopyItemProperties(selectedSlot.slotItem, slotTo.GetComponent<Slot>().slotToSync.gameObject);
+                    }
                     RemoveItemComponent(selectedSlot.transform);
                     selectedSlot.slotItem = null;
                 }
@@ -138,6 +145,7 @@ public class Inventory : MonoBehaviour
             {
                 selectedSlot.slotItem = CopyItemProperties(slotItem, selectedSlot.gameObject);
                 RemoveItemComponent(slotTo);
+                if(slotTo.GetComponent<Slot>().slotToSync) RemoveItemComponent(slotTo.GetComponent<Slot>().slotToSync.transform);
                 Destroy(slotItem);
                 slotItem = null;
             }
@@ -200,6 +208,7 @@ public class Inventory : MonoBehaviour
                     if (slot.slotItem != null && slot.slotItem.type.Contains("Stackable") && slot.slotItem.itemName.Equals(groundItem.GetComponent<Item>().itemName))
                     {
                         slot.slotItem.itemNumber += groundItem.GetComponent<Item>().itemNumber;
+                        if(slot.slotToSync) slot.slotToSync.slotItem.itemNumber += groundItem.GetComponent<Item>().itemNumber;
 
                         Destroy(groundItem);
 
@@ -229,6 +238,8 @@ public class Inventory : MonoBehaviour
 
                             gameInterface.HandItemDisplayUpdate();
 
+                            if(slot.slotToSync) slot.slotToSync.slotItem = CopyItemProperties(item, slotTrans.GetChild(0).gameObject);
+
                             return null;
                         }
                     }
@@ -242,6 +253,7 @@ public class Inventory : MonoBehaviour
                 if (slot.slotItem == null && (TypeCorrespondanceCheck(item, slot.item_type) || slot.item_type.Contains("any")))
                 {
                     slot.slotItem = CopyItemProperties(item, slotGO);
+                    if(slot.slotToSync) slot.slotToSync.slotItem = CopyItemProperties(item, slotGO);
 
                     Destroy(groundItem);
 
@@ -361,6 +373,7 @@ public class Inventory : MonoBehaviour
             customItemBehaviour.musics = itemGrab.customItemBehaviour.musics;
             customItemBehaviour.itemInteractionStr = itemGrab.customItemBehaviour.itemInteractionStr;
             customItemBehaviour.musicSource = audioSource;
+            customItemBehaviour.oldClip = itemGrab.customItemBehaviour.oldClip;
 
             item.customItemBehaviour = customItemBehaviour;
         }
@@ -376,7 +389,7 @@ public class Inventory : MonoBehaviour
 
         return item;
     }
-    void AllUpdate()
+    public void AllUpdate()
     {
         InventoryTabsGestion();
 
@@ -453,12 +466,17 @@ public class Inventory : MonoBehaviour
             if (!ejectStack && itemToEjectSlot.slotItem.itemNumber >= 2)
             {
                 itemToEjectSlot.slotItem.itemNumber -= 1;
+                if(itemToEjectSlot.slotToSync) itemToEjectSlot.slotToSync.slotItem.itemNumber -= 1;
             }
             else
             {
                 RemoveItemComponent(itemToEjectSlot.transform);
                 Destroy(itemToEjectSlot.slotItem);
                 itemToEjectSlot.slotItem = null;
+                if(itemToEjectSlot.slotToSync){
+                    Destroy(itemToEjectSlot.slotToSync);
+                     itemToEjectSlot.slotToSync.slotItem = null;
+                }
             }
 
             AllUpdate();

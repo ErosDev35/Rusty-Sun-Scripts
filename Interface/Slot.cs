@@ -7,6 +7,7 @@ public class Slot : MonoBehaviour
     public Item slotItem;
     public string item_type = "any";
     public GameObject itemNumberDisplay;
+    public Slot slotToSync = null;
     public void OnClick()
     {
         GameObject.Find("Bag").GetComponent<Inventory>().SlotClick(this.transform);

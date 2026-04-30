@@ -658,15 +658,17 @@ public class GameInterface : MonoBehaviour
     }
     public void ContainerTabInit()
     {
+        print("On ouvre un container");
         Transform tab = otherTab.GetChild(1);
         List<Slot> slots = container.containerSlots;
         List<Slot> newSlots = new List<Slot>();
         List<Transform> slotsTrans = new List<Transform>();
-        Vector3 defaultSlotPos = new Vector3(310, 0, 0);
+        Vector3 defaultSlotPos = new Vector3(315, -30, 0);
 
         foreach (Slot slot in slots)
         {
             if (!slot) newSlots.Insert(slots.IndexOf(slot), container.AddComponent<Slot>());
+            else newSlots.Insert(slots.IndexOf(slot), container.containerSlots[slots.IndexOf(slot)]);
         }
 
         container.containerSlots = newSlots;
@@ -678,14 +680,23 @@ public class GameInterface : MonoBehaviour
 
         foreach (Slot slot in slots)
         {
-            print("création d'un nouveau slot");
             var slotInst = Instantiate(slotPrefab, tab);
             slotsTrans.Add(slotInst);
-            Transform previousSlotTrans = (slotsTrans[slots.IndexOf(slot) - 1] != null)? slotsTrans[slots.IndexOf(slot) - 1] : null;
+            Transform previousSlotTrans = (slotsTrans.IndexOf(slotInst) - 1 >= 0)? slotsTrans[slotsTrans.IndexOf(slotInst) - 1] : null;
+            
+            int level = Mathf.RoundToInt(slotsTrans.IndexOf(slotInst) / 10);
+            
+            Vector3 newPos = (previousSlotTrans != null)? previousSlotTrans.transform.localPosition + 
+            new Vector3(30, level * 30 * -1,0): defaultSlotPos;
 
-            Vector3 newPos = (previousSlotTrans != null)? previousSlotTrans.transform.position + previousSlotTrans.transform.localScale : defaultSlotPos;
-            print(newPos);
+            newPos.x = (slotsTrans.IndexOf(slotInst) % 10 == 0) ? defaultSlotPos.x : newPos.x;
+            newPos.y = defaultSlotPos.y + level * 30 * -1;
+
             slotInst.transform.localPosition = newPos;
+            slotInst.GetComponent<Slot>().slotToSync = container.containerSlots[slotsTrans.IndexOf(slotInst)];
+
+            if(container.containerSlots[slotsTrans.IndexOf(slotInst)] && container.containerSlots[slotsTrans.IndexOf(slotInst)].slotItem)
+            slotInst.GetComponent<Slot>().slotItem = bag.GetComponent<Inventory>().CopyItemProperties(container.containerSlots[slotsTrans.IndexOf(slotInst)].slotItem, slotInst.gameObject);
         }
     }
 }

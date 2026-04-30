@@ -1,2 +1,21 @@
 fileFormatVersion: 2
 guid: d3269bd45d5e3094680de4932943e5d8
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - inventoryImage: {fileID: 1757465086, guid: ce4f99d49e4439b4a9bfae54f8854fd5, type: 3}
+  - itemPrefab: {instanceID: 0}
+  - armor: {instanceID: 0}
+  - consommable: {instanceID: 0}
+  - itemUsage: {instanceID: 0}
+  - firearm: {instanceID: 0}
+  - medicine: {instanceID: 0}
+  - customItemBehaviour: {instanceID: 0}
+  - meleeWeapon: {instanceID: 0}
+  - itemMaterial: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
