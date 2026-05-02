@@ -20,6 +20,7 @@ public class GameInterface : MonoBehaviour
     private Vector2 staminaWidthHeightLock;
     private UnityEngine.UI.Image staminaImage;
     public VolumeProfile gameVolume;
+    public VolumeProfile pauseVolume;
     private ChromaticAberration chromaticAberration;
     private DepthOfField depthOfField;
     ChromaticAberration cA;
@@ -165,6 +166,7 @@ public class GameInterface : MonoBehaviour
     }
     void Pause()
     {
+        cMCam.GetComponent<CinemachineVolumeSettings>().Profile = (gamePaused)? pauseVolume : gameVolume;
         if (Input.GetKeyDown(KeyCode.Escape) && !playerComponent.preBuild) gamePaused = !gamePaused;
         else if (Input.GetKeyDown(KeyCode.Escape) && playerComponent.preBuild) playerComponent.preBuild = !playerComponent.preBuild;
         pauseMenu.SetActive(gamePaused);
@@ -359,8 +361,9 @@ public class GameInterface : MonoBehaviour
     {
         itemName.gameObject.SetActive(!playerComponent.isLookingAtBag);
         itemPlayerLooking = (playerComponent.itemLookingAt != null) ? playerComponent.itemLookingAt : (playerComponent.doorLookingAt != null) ? playerComponent.doorLookingAt : playerComponent.buildLookingAt;
-        itemName.text = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? itemPlayerLooking.GetComponent<Item>().itemName + ((itemPlayerLooking.GetComponent<Item>().itemNumber >= 2) ? " (" + itemPlayerLooking.GetComponent<Item>().itemNumber + ")" : "")
-        : (itemPlayerLooking.GetComponent<Door>() != null) ? itemPlayerLooking.GetComponent<Door>().doorName : itemPlayerLooking.GetComponent<Build>().buildName : "";
+        itemName.text = (itemPlayerLooking != null) ? (playerComponent.itemLookingAt != null) ? itemPlayerLooking.GetComponent<Item>().itemName + ((itemPlayerLooking.GetComponent<Item>().itemNumber >= 2) ? " (" + itemPlayerLooking.GetComponent<Item>().itemNumber + ")" : "")
+        : (playerComponent.doorLookingAt != null) ? itemPlayerLooking.GetComponent<Door>().doorName : 
+        itemPlayerLooking.GetComponent<Build>().buildName : "";
 
         string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to enter" : "[E] to interact" : "";
         descriptor += (itemPlayerLooking != null && itemPlayerLooking.GetComponent<CustomItemBehaviour>()) ? " [F] " + itemPlayerLooking.GetComponent<CustomItemBehaviour>().GetDescriptorState() : "";
@@ -420,7 +423,7 @@ public class GameInterface : MonoBehaviour
         itemVisualizerBackground.gameObject.SetActive(canSeeItem);
         inventoryItemName.text = (canSeeItem) ? slotHovered.GetComponent<Slot>().slotItem.itemName : "";
         inventoryItemDescription.text = (canSeeItem) ? slotHovered.GetComponent<Slot>().slotItem.itemDescription : "";
-        inventoryItemWeight.text = (canSeeItem) ? slotHovered.GetComponent<Slot>().slotItem.itemEquippedTotalWeight.ToString() + " (" + slotHovered.GetComponent<Slot>().slotItem.itemTotalWeight.ToString() + " non équipé)" : "";
+        inventoryItemWeight.text = (canSeeItem && slotHovered.GetComponent<Slot>().slotItem.itemEquippedTotalWeight != 0) ? slotHovered.GetComponent<Slot>().slotItem.itemEquippedTotalWeight.ToString() + " (" + slotHovered.GetComponent<Slot>().slotItem.itemTotalWeight.ToString() + " non équipé)" : "";
         inventoryItemType.text = (canSeeItem) ? slotHovered.GetComponent<Slot>().slotItem.type[0] : "";
         itemPhoto.gameObject.SetActive(canSeeItem);
         itemPhoto.GetComponent<Image>().sprite = (canSeeItem) ? slotHovered.GetComponent<Slot>().slotItem.inventoryImage : null;

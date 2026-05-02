@@ -95,44 +95,45 @@ public class Inventory : MonoBehaviour
             slots.Add(slotVar);
         }
     }
-    public void SlotClick(Transform slotTo, Slot customSlot = null)
+    public void SlotClick(Slot slotTo, Slot customSlot = null)
     {
-        Item slotItem = slotTo.GetComponent<Slot>().slotItem;
+        Item slotItem = slotTo.slotItem;
         Slot selectedSlot = (customSlot != null) ? customSlot : ItemSelectedSlot;
 
         if (selectedSlot.slotItem != null)
         {
-            if (TypeCorrespondanceCheck(selectedSlot.slotItem, slotTo.GetComponent<Slot>().item_type) || slotTo.GetComponent<Slot>().item_type == "any")
+            if (TypeCorrespondanceCheck(selectedSlot.slotItem, slotTo.item_type) || slotTo.item_type == "any")
             {
                 if (slotItem != null)
                 {
                     if (selectedSlot.slotItem.itemName.Equals(slotItem.itemName) && selectedSlot.slotItem.type.Contains("Stackable") && slotItem.type.Contains("Stackable"))
                     {
                         RemoveItemComponent(selectedSlot.transform);
-                        slotTo.GetComponent<Slot>().slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
-                        if(slotTo.GetComponent<Slot>().slotToSync) slotTo.GetComponent<Slot>().slotToSync.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
+                        slotTo.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
+                        if(slotTo.slotToSync) slotTo.slotToSync.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
                     }
                     else
                     {
-                        slotExchange.slotItem = CopyItemProperties(selectedSlot.slotItem, slotExchange.gameObject);
+                        slotItem = CopyItemProperties(selectedSlot.slotItem, slotExchange.gameObject);
+                        slotExchange.slotItem = slotItem;
                         RemoveItemComponent(selectedSlot.transform);
 
                         selectedSlot.GetComponent<Slot>().slotItem = CopyItemProperties(slotItem, selectedSlot.gameObject);
                         RemoveItemComponent(slotTo.transform);
 
-                        slotTo.GetComponent<Slot>().slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.gameObject);
-                        if(slotTo.GetComponent<Slot>().slotToSync) slotTo.GetComponent<Slot>().slotToSync.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.GetComponent<Slot>().slotToSync.gameObject);
+                        slotTo.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.gameObject);
+                        if(slotTo.slotToSync) slotTo.slotToSync.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.slotToSync.gameObject);
                         RemoveItemComponent(slotExchange.transform);
                     }
                 }
                 else
                 {
                     slotItem = CopyItemProperties(selectedSlot.slotItem, slotTo.gameObject);
-                    slotTo.GetComponent<Slot>().slotItem = slotItem;
-                    if (slotTo.GetComponent<Slot>().slotToSync)
+                    slotTo.slotItem = slotItem;
+                    if (slotTo.slotToSync)
                     {
-                        print("on syncronise " + slotTo.GetComponent<Slot>().slotToSync);
-                        slotTo.GetComponent<Slot>().slotToSync.slotItem = CopyItemProperties(selectedSlot.slotItem, slotTo.GetComponent<Slot>().slotToSync.gameObject);
+                        print("on syncronise " + slotTo.slotToSync);
+                        slotTo.slotToSync.slotItem = CopyItemProperties(selectedSlot.slotItem, slotTo.slotToSync.gameObject);
                     }
                     RemoveItemComponent(selectedSlot.transform);
                     selectedSlot.slotItem = null;
@@ -144,8 +145,8 @@ public class Inventory : MonoBehaviour
             if (slotItem != null)
             {
                 selectedSlot.slotItem = CopyItemProperties(slotItem, selectedSlot.gameObject);
-                RemoveItemComponent(slotTo);
-                if(slotTo.GetComponent<Slot>().slotToSync) RemoveItemComponent(slotTo.GetComponent<Slot>().slotToSync.transform);
+                RemoveItemComponent(slotTo.transform);
+                if(slotTo.slotToSync) RemoveItemComponent(slotTo.slotToSync.transform);
                 Destroy(slotItem);
                 slotItem = null;
             }
@@ -154,6 +155,7 @@ public class Inventory : MonoBehaviour
     }
     public void RemoveItemComponent(Transform slot)
     {
+        print("on enlève des composants de " + slot.name);
         if (slot.GetComponent<Item>() != null)
         {
             Destroy(slot.GetComponent<Item>());
@@ -277,7 +279,7 @@ public class Inventory : MonoBehaviour
     }
     public Item CopyItemProperties(Item itemGrab, GameObject slot = null, bool baseNumber = false)
     {
-        if (slot.GetComponent<Item>() != null) Destroy(slot.GetComponent<Item>());
+        //if(slot.GetComponent<Item>() != null) Destroy(slot.GetComponent<Item>());
         Item item = slot.AddComponent<Item>();
         Armor armor = (itemGrab.armor != null) ? slot.AddComponent<Armor>() : null;
         Consommable consommable = (itemGrab.consommable != null) ? slot.AddComponent<Consommable>() : null;

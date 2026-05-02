@@ -10,7 +10,7 @@ public class Slot : MonoBehaviour
     public Slot slotToSync = null;
     public void OnClick()
     {
-        GameObject.Find("Bag").GetComponent<Inventory>().SlotClick(this.transform);
+        GameObject.Find("Bag").GetComponent<Inventory>().SlotClick(GetComponent<Slot>());
     }
     public void OnHover()
     {

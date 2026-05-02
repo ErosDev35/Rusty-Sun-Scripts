@@ -5,6 +5,7 @@ using System.Net.NetworkInformation;
 using TMPro;
 using Unity.Cinemachine;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.SceneManagement;
@@ -90,6 +91,7 @@ namespace AYellowpaper.SerializedCollections
                 consoleLogStr += state.Key + " : " + optionDataValue + "; ";
             }
             print(consoleLogStr);
+            OptionReloadApplication(optionData);
         }
         public void SaveCurrentState()
         {
@@ -121,6 +123,13 @@ namespace AYellowpaper.SerializedCollections
         {
             Vector2Int resolution = optionToLoad.screenResolutionDict[(int)optionToLoad.screenResolution];
             Screen.SetResolution(resolution.x, resolution.y, optionToLoad.screenModeDict[(int)optionToLoad.screenMode]);
+            QualitySettings.vSyncCount = (int) optionToLoad.vSync;
+            Application.targetFrameRate = (int) optionToLoad.framerateTarget;
+            PlayerPrefs.SetFloat("masterVolume", optionToLoad.masterVolume);
+            PlayerPrefs.SetFloat("sfxVolume", optionToLoad.sfxVolume);
+            PlayerPrefs.SetFloat("musicVolume", optionToLoad.musicVolume);
+            PlayerPrefs.SetFloat("mouseSensitivity", optionToLoad.mouseSensitivity);
+            PlayerPrefs.SetFloat("fov", optionToLoad.fov);
         }
         void UnderlineGestion()
         {

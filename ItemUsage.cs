@@ -62,7 +62,7 @@ public class ItemUsage : MonoBehaviour
             {
                 if (slot.GetComponent<Slot>().slotItem == null)
                 {
-                    playerInv.SlotClick(slot.transform, slotUsed);
+                    playerInv.SlotClick(slot.GetComponent<Slot>(), slotUsed);
 
                     return;
                 }
@@ -74,7 +74,7 @@ public class ItemUsage : MonoBehaviour
         {
             if (playerInv.TypeCorrespondanceCheck(item, slot.GetComponent<Slot>().item_type))
             {
-                playerInv.SlotClick(slot.transform, slotUsed);
+                playerInv.SlotClick(slot.GetComponent<Slot>(), slotUsed);
 
                 return;
             }
@@ -104,6 +104,7 @@ public class ItemUsage : MonoBehaviour
         {
             player.hunger += item.consommable.nutritiousValue;
             playerAnimations.EatAnimation();
+            if(slot.slotToSync) DestroyItem(slot.slotToSync);
             DestroyItem(slot);
             player.eatingFrames += 1;
         }

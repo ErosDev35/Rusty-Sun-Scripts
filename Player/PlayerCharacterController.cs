@@ -192,7 +192,7 @@ public class PlayerCharacterController : MonoBehaviour
 
         RaycastHit hit;
 
-        float wallMultiplier = (Physics.Raycast(transform.position, right * tilt, out hit ,Vector3.Distance(transform.position, transform.position + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain")))? 
+        float wallMultiplier = (Physics.Raycast(transform.position + new Vector3(0,0.65f,0), right * tilt, out hit ,Vector3.Distance(transform.position + new Vector3(0,0.65f,0), transform.position + new Vector3(0,0.65f,0) + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain")))? 
         Mathf.Clamp(hit.distance, 0, 1) - 0.2f : 1;
         
         Vector3 offset = (IsAiming())? right * tilt * wallMultiplier : Vector3.zero;
