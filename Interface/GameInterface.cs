@@ -79,6 +79,8 @@ public class GameInterface : MonoBehaviour
     public bool mainTab = true;
     public Container container;
     public Transform slotPrefab;
+    public Transform craftMenu;
+
     void Start()
     {
         bag.gameObject.SetActive(false);
@@ -166,7 +168,7 @@ public class GameInterface : MonoBehaviour
     }
     void Pause()
     {
-        cMCam.GetComponent<CinemachineVolumeSettings>().Profile = (gamePaused)? pauseVolume : gameVolume;
+        cMCam.GetComponent<CinemachineVolumeSettings>().Profile = (gamePaused) ? pauseVolume : gameVolume;
         if (Input.GetKeyDown(KeyCode.Escape) && !playerComponent.preBuild) gamePaused = !gamePaused;
         else if (Input.GetKeyDown(KeyCode.Escape) && playerComponent.preBuild) playerComponent.preBuild = !playerComponent.preBuild;
         pauseMenu.SetActive(gamePaused);
@@ -181,12 +183,14 @@ public class GameInterface : MonoBehaviour
         CrouchVisualizer();
         BuildMenu();
         BodyCheck();
+        CraftMenu();
     }
     void BuildMenu()
     {
         buildMenu.gameObject.SetActive(playerComponent.wantToBuild);
         preBuildVisualizer.gameObject.SetActive(playerComponent.preBuild);
 
+        //On vérifie qu'on peut build le build
         if (playerComponent.wantToBuild)
             foreach (Transform buildOption in buildMenu.GetChild(0).GetChild(0).GetChild(0))
             {
@@ -194,30 +198,15 @@ public class GameInterface : MonoBehaviour
 
                 foreach (var need in buildNeedsDict[buildOption.GetSiblingIndex()])
                 {
-                    int amountOfThatResource = 0;
-
-                    foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().slots)
-                    {
-                        Slot slot = slotGo.GetComponent<Slot>();
-                        if (slot.slotItem && slotGo.name != "SlotHotbar" && slot.slotItem.itemName.Contains(need.Key))
-                        {
-                            amountOfThatResource += slot.slotItem.itemNumber;
-                        }
-                    }
-                    foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().equippedSlots)
-                    {
-                        Slot slot = slotGo.GetComponent<Slot>();
-                        if (slot.slotItem && slot.slotItem.itemName.Contains(need.Key))
-                        {
-                            amountOfThatResource += slot.slotItem.itemNumber;
-                        }
-                    }
-                    if (amountOfThatResource < need.Value) canBuild = false;
+                    if (howManyInventoryHave(need.Key) < need.Value) canBuild = false;
                 }
+
                 if (!canBuildThatBuild.ContainsKey(buildOption.GetSiblingIndex()) || (canBuildThatBuild.ContainsKey(buildOption.GetSiblingIndex()) && canBuildThatBuild[buildOption.GetSiblingIndex()] != canBuild))
                     canBuildThatBuild[buildOption.GetSiblingIndex()] = canBuild;
             }
 
+
+        // Maintenant on place le build qu'on a choisit
         if (playerComponent.preBuild)
         {
             RaycastHit hit;
@@ -255,6 +244,43 @@ public class GameInterface : MonoBehaviour
             }
             if (playerComponent.wantToBuild) playerComponent.preBuild = false;
         }
+    }
+    void CraftMenu()
+    {
+        craftMenu.gameObject.SetActive(playerComponent.wantToCraft);
+    }
+    void CraftItem(Craft craft)
+    {
+        bool canCraft = false;
+
+        foreach (var need in craft.craftNeeds)
+        {
+            if (howManyInventoryHave(need.Key) < need.Value) canCraft = false;
+        }
+
+        if (canCraft) playerComponent.inventory.GetComponent<Inventory>().AddItem(craft.itemToCraft);
+    }
+    int howManyInventoryHave(string itemName)
+    {
+        int amountOfThatResource = 0;
+
+        foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().slots)
+        {
+            Slot slot = slotGo.GetComponent<Slot>();
+            if (slot.slotItem && slotGo.name != "SlotHotbar" && slot.slotItem.itemName.Contains(itemName))
+            {
+                amountOfThatResource += slot.slotItem.itemNumber;
+            }
+        }
+        foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().equippedSlots)
+        {
+            Slot slot = slotGo.GetComponent<Slot>();
+            if (slot.slotItem && slot.slotItem.itemName.Contains(itemName))
+            {
+                amountOfThatResource += slot.slotItem.itemNumber;
+            }
+        }
+        return amountOfThatResource;
     }
     void CraftBuild()
     {
@@ -324,6 +350,7 @@ public class GameInterface : MonoBehaviour
     void Inventory()
     {
         bag.gameObject.SetActive(playerComponent.isLookingAtBag);
+        foreach (Transform child in bag) child.gameObject.SetActive(playerComponent.isLookingAtBag);
 
         if (playerComponent.isLookingAtBag && !playerComponent.wantToHeal)
         {
@@ -362,7 +389,7 @@ public class GameInterface : MonoBehaviour
         itemName.gameObject.SetActive(!playerComponent.isLookingAtBag);
         itemPlayerLooking = (playerComponent.itemLookingAt != null) ? playerComponent.itemLookingAt : (playerComponent.doorLookingAt != null) ? playerComponent.doorLookingAt : playerComponent.buildLookingAt;
         itemName.text = (itemPlayerLooking != null) ? (playerComponent.itemLookingAt != null) ? itemPlayerLooking.GetComponent<Item>().itemName + ((itemPlayerLooking.GetComponent<Item>().itemNumber >= 2) ? " (" + itemPlayerLooking.GetComponent<Item>().itemNumber + ")" : "")
-        : (playerComponent.doorLookingAt != null) ? itemPlayerLooking.GetComponent<Door>().doorName : 
+        : (playerComponent.doorLookingAt != null) ? itemPlayerLooking.GetComponent<Door>().doorName :
         itemPlayerLooking.GetComponent<Build>().buildName : "";
 
         string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to enter" : "[E] to interact" : "";
@@ -459,7 +486,7 @@ public class GameInterface : MonoBehaviour
                 }
                 if (bodyPartTransform.tag != "No Fade")
 
-                    bodyPartTransform.GetComponent<Image>().color = new Color(1, 1, 1, 100 * (1 / distanceFromCursor));
+                    bodyPartTransform.GetComponent<Image>().color = new Color(0, 0, 0, 0.15f + 100 * (1 / distanceFromCursor));
             }
 
             itemHealthMenuImage.sprite = playerComponent.handItem.inventoryImage;
@@ -685,12 +712,12 @@ public class GameInterface : MonoBehaviour
         {
             var slotInst = Instantiate(slotPrefab, tab);
             slotsTrans.Add(slotInst);
-            Transform previousSlotTrans = (slotsTrans.IndexOf(slotInst) - 1 >= 0)? slotsTrans[slotsTrans.IndexOf(slotInst) - 1] : null;
-            
+            Transform previousSlotTrans = (slotsTrans.IndexOf(slotInst) - 1 >= 0) ? slotsTrans[slotsTrans.IndexOf(slotInst) - 1] : null;
+
             int level = Mathf.RoundToInt(slotsTrans.IndexOf(slotInst) / 10);
-            
-            Vector3 newPos = (previousSlotTrans != null)? previousSlotTrans.transform.localPosition + 
-            new Vector3(30, level * 30 * -1,0): defaultSlotPos;
+
+            Vector3 newPos = (previousSlotTrans != null) ? previousSlotTrans.transform.localPosition +
+            new Vector3(30, level * 30 * -1, 0) : defaultSlotPos;
 
             newPos.x = (slotsTrans.IndexOf(slotInst) % 10 == 0) ? defaultSlotPos.x : newPos.x;
             newPos.y = defaultSlotPos.y + level * 30 * -1;
@@ -698,8 +725,8 @@ public class GameInterface : MonoBehaviour
             slotInst.transform.localPosition = newPos;
             slotInst.GetComponent<Slot>().slotToSync = container.containerSlots[slotsTrans.IndexOf(slotInst)];
 
-            if(container.containerSlots[slotsTrans.IndexOf(slotInst)] && container.containerSlots[slotsTrans.IndexOf(slotInst)].slotItem)
-            slotInst.GetComponent<Slot>().slotItem = bag.GetComponent<Inventory>().CopyItemProperties(container.containerSlots[slotsTrans.IndexOf(slotInst)].slotItem, slotInst.gameObject);
+            if (container.containerSlots[slotsTrans.IndexOf(slotInst)] && container.containerSlots[slotsTrans.IndexOf(slotInst)].slotItem)
+                slotInst.GetComponent<Slot>().slotItem = bag.GetComponent<Inventory>().CopyItemProperties(container.containerSlots[slotsTrans.IndexOf(slotInst)].slotItem, slotInst.gameObject);
         }
     }
 }

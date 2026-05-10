@@ -93,6 +93,9 @@ public class PlayerCharacterController : MonoBehaviour
     public bool wantToBuild = false;
     public bool preBuild = false;
     //.....................................................
+    //Craft Section
+    public bool wantToCraft = false;
+    //.....................................................
     // Audio Section
     public float stepTime = 0;
     public float timeBetweenStep = 100;
@@ -139,9 +142,9 @@ public class PlayerCharacterController : MonoBehaviour
         StatusCheck();
         Starving();
         EjectItem();
-        Crouch();
         InvincibilityFrames();
         Build();
+        Craft();
         CheckOnBody();
         PlayerAudio();
         MeleeAttack();
@@ -149,7 +152,13 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Camera()
     {
-        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") + ((IsAiming())? Input.GetAxis("Tilt") * 3 : 0) * (tiltDegree * -1) + addTilt : addTilt);
+        float bagAngle = Mathf.Round(Vector3.Distance(transform.up * -1, cMCam.transform.forward) * 100) / 100;
+        int panDirection = (bagAngle != 1f ? (bagAngle < 1f) ? -1 : 1 : 0);
+
+        addPan = (LookingAtUi() && (isLookingAtBag || wantToCheckBody)) ? addPan + ((150f * Time.deltaTime * Mathf.Abs(1 - bagAngle)) * panDirection) : 0;
+        addPan = (gameInterface.bodyPartToCheck && (gameInterface.bodyPartToCheck.bodyPartName == "Right Leg" || gameInterface.bodyPartToCheck.bodyPartName == "Left Leg")) ? 40 : addPan;
+
+        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") + ((IsAiming()) ? Input.GetAxis("Tilt") * 3 : 0) * (tiltDegree * -1) + addTilt : addTilt);
         Quaternion pan = Quaternion.Euler((!LookingAtUi()) ? Input.GetAxis("Vertical") * (panDegree) + addPan : addPan, 0, 0);
 
         if (!LookingAtUi())
@@ -161,7 +170,7 @@ public class PlayerCharacterController : MonoBehaviour
         }
 
         var xQuat = Quaternion.AngleAxis(rotation.x, Vector3.up);
-        var yQuat = (LookingAtUi() && (wantToCheckBody || isLookingAtBag)) ? Quaternion.AngleAxis(-20, Vector3.left) : Quaternion.AngleAxis(rotation.y, Vector3.left);
+        var yQuat = Quaternion.AngleAxis(rotation.y, Vector3.left);
 
         cMCam.localRotation = xQuat * yQuat;
 
@@ -175,13 +184,13 @@ public class PlayerCharacterController : MonoBehaviour
         shakeAmplitude = Mathf.Clamp(shakeAmplitude, 0, 1.1f);
         shakeFrequency = Mathf.Clamp(shakeFrequency, 0, 1.1f);
 
-        cMChannelPerlin.AmplitudeGain = (LookingAtUi()) ? 0.45f : shakeAmplitude;
+        cMChannelPerlin.AmplitudeGain = (LookingAtUi()) ? 0.25f : shakeAmplitude;
         cMChannelPerlin.FrequencyGain = (LookingAtUi()) ? 0.1f : shakeFrequency;
 
         firearmKnockback = (firearmKnockback > 0) ? firearmKnockback - Time.deltaTime * 25 : 0;
 
         explosionCam -= (explosionCam > 0) ? Time.deltaTime * 4 : 0;
-        explosionCam = Mathf.Clamp(explosionCam,0,3.5f);
+        explosionCam = Mathf.Clamp(explosionCam, 0, 3.5f);
 
         CamTilt();
     }
@@ -192,12 +201,13 @@ public class PlayerCharacterController : MonoBehaviour
 
         RaycastHit hit;
 
-        float wallMultiplier = (Physics.Raycast(transform.position + new Vector3(0,0.65f,0), right * tilt, out hit ,Vector3.Distance(transform.position + new Vector3(0,0.65f,0), transform.position + new Vector3(0,0.65f,0) + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain")))? 
+        float wallMultiplier = (Physics.Raycast(transform.position + new Vector3(0, 0.65f, 0), right * tilt, out hit, Vector3.Distance(transform.position + new Vector3(0, 0.65f, 0), transform.position + new Vector3(0, 0.65f, 0) + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain"))
+        || Physics.Raycast(transform.position + new Vector3(0, 1f, 0), right * tilt, out hit, Vector3.Distance(transform.position + new Vector3(0, 1f, 0), transform.position + new Vector3(0, 1f, 0) + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain"))) ?
         Mathf.Clamp(hit.distance, 0, 1) - 0.2f : 1;
-        
-        Vector3 offset = (IsAiming())? right * tilt * wallMultiplier : Vector3.zero;
+
+        Vector3 offset = (IsAiming()) ? right * tilt * wallMultiplier : Vector3.zero;
         offset.y = 0.9f;
-        
+
         cMPositionComposer.TargetOffset = offset;
     }
     void ShouldKeepSliding()
@@ -300,6 +310,7 @@ public class PlayerCharacterController : MonoBehaviour
         {
             isLookingAtBag = !isLookingAtBag;
             gameInterface.mainTab = true;
+            inventory.gameObject.SetActive(true);
             inventory.GetComponent<Inventory>().hoveredSlot = null;
             if (!isLookingAtBag)
             {
@@ -352,8 +363,11 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void StatusCheck()
     {
-        armor = inventory.GetComponent<Inventory>().totalArmor;
-        thermalInsolation = inventory.GetComponent<Inventory>().totalThermal;
+        if (inventory)
+        {
+            armor = inventory.GetComponent<Inventory>().totalArmor;
+            thermalInsolation = inventory.GetComponent<Inventory>().totalThermal;
+        }
     }
     void HandSlots()
     {
@@ -427,13 +441,22 @@ public class PlayerCharacterController : MonoBehaviour
             }
             else
             {
-                inventory.GetComponent<Inventory>().EjectItem(handsItems[handItemChoice].GetChild(0).GetComponent<Slot>(), false);
+                inventory.GetComponent<Inventory>().EjectItem(handsItems[handItemChoice].GetChild(0).GetComponent<Slot>(), isCrouching());
             }
         }
     }
-    void Crouch()
+    public bool isCrouching()
     {
-        controller.height = (isCrouching()) ? 2 - (0.6f * Input.GetAxis("Crouch")) : 2;
+        if (controller.height != 2 && Physics.Raycast(transform.position, transform.up, 1.2f, LayerMask.GetMask("Terrain")))
+        {
+            controller.height = 2 - 0.6f;
+        }
+        else
+        {
+            controller.height = 2 - 0.6f * Input.GetAxis("Crouch");
+        }
+        Debug.DrawRay(transform.position, transform.up * 1.2f, Color.red);
+        return controller.height != 2;
     }
     bool isLookingAtAnItem()
     {
@@ -471,10 +494,6 @@ public class PlayerCharacterController : MonoBehaviour
         buildLookingAt = null;
         return false;
     }
-    public bool isCrouching()
-    {
-        return Input.GetAxis("Crouch") != 0;
-    }
     public bool isRunning()
     {
         bool running = ((Input.GetAxis("Sprint") != 0 && stamina < maxStamina) && !outOfBreath && !IsFalling() && speedDebuff > 40f);
@@ -493,7 +512,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public bool IsFalling()
     {
-        if (!wasGrounded && wasGrounded != controller.isGrounded && MathF.Abs(MathF.Round(oldVerticalSpeed)) != 0 && oldVerticalSpeed < -20f)
+        if (!wasGrounded && wasGrounded != controller.isGrounded && MathF.Abs(MathF.Round(oldVerticalSpeed)) != 0 && oldVerticalSpeed < -25f)
         {
             List<string> bodyParts = new List<string>();
             bodyParts.Add("Left Leg");
@@ -624,9 +643,13 @@ public class PlayerCharacterController : MonoBehaviour
     {
         wantToBuild = ((Input.GetKeyDown("v") && ((!LookingAtUi()) || (LookingAtUi() && wantToBuild))) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToBuild)) ? !wantToBuild : wantToBuild;
     }
+    void Craft()
+    {
+        wantToCraft = ((Input.GetKeyDown("c") && ((!LookingAtUi()) || (LookingAtUi() && wantToCraft))) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToCraft)) ? !wantToCraft : wantToCraft;
+    }
     public bool LookingAtUi()
     {
-        bool uiLook = isLookingAtBag || wantToBuild || wantToHeal || wantToCheckBody || gameInterface.gamePaused;
+        bool uiLook = isLookingAtBag || wantToBuild || wantToHeal || wantToCheckBody || wantToCraft || gameInterface.gamePaused;
 
         return uiLook;
     }
@@ -636,7 +659,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void CheckOnBody()
     {
-        bool checkBody = ((Input.GetKeyDown("h") && !isLookingAtBag && !wantToHeal) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToCheckBody)) ? !wantToCheckBody : wantToCheckBody;
+        bool checkBody = (((Input.GetKeyDown("h") && !isLookingAtBag && !wantToHeal) && onGround) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToCheckBody)) ? !wantToCheckBody : wantToCheckBody;
         if (checkBody != wantToCheckBody) gameInterface.bodyPartToCheck = playerHealth.bodyParts[2];
         wantToCheckBody = checkBody;
     }

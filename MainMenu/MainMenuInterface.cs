@@ -28,6 +28,7 @@ namespace AYellowpaper.SerializedCollections
         [SerializeField] SerializedDictionary<string, GameObject> saveStateDict;
         [SerializeField] GameInterface gameInterface;
         [SerializeField] Transform cursorTrans;
+        [SerializeField] Transform fpsCapField;
         private float language = 1;
         private List<string> keyBindings;
         string saveFile;
@@ -123,13 +124,14 @@ namespace AYellowpaper.SerializedCollections
         {
             Vector2Int resolution = optionToLoad.screenResolutionDict[(int)optionToLoad.screenResolution];
             Screen.SetResolution(resolution.x, resolution.y, optionToLoad.screenModeDict[(int)optionToLoad.screenMode]);
-            QualitySettings.vSyncCount = (int) optionToLoad.vSync;
-            Application.targetFrameRate = (int) optionToLoad.framerateTarget;
+            QualitySettings.vSyncCount = (int)optionToLoad.vSync;
+            Application.targetFrameRate = (optionToLoad.fpsCap != 0) ? int.Parse(optionToLoad.fpsCapDict[(int)optionToLoad.fpsCap]) : -1;
             PlayerPrefs.SetFloat("masterVolume", optionToLoad.masterVolume);
             PlayerPrefs.SetFloat("sfxVolume", optionToLoad.sfxVolume);
             PlayerPrefs.SetFloat("musicVolume", optionToLoad.musicVolume);
             PlayerPrefs.SetFloat("mouseSensitivity", optionToLoad.mouseSensitivity);
             PlayerPrefs.SetFloat("fov", optionToLoad.fov);
+            fpsCapField.gameObject.SetActive(optionToLoad.vSync == 0);
         }
         void UnderlineGestion()
         {
@@ -176,9 +178,9 @@ namespace AYellowpaper.SerializedCollections
         }
         void Interface()
         {
-            if(gameVersion)
-            gameVersion.text = "V." + Application.version;
-            foreach(Transform label in simpleSliderLabels)
+            if (gameVersion)
+                gameVersion.text = "V." + Application.version;
+            foreach (Transform label in simpleSliderLabels)
             {
                 label.GetComponent<TextMeshProUGUI>().text = label.parent.GetChild(0).GetComponent<Slider>().value.ToString() + simpleSliderLabelsExtra[simpleSliderLabels.IndexOf(label)];
             }

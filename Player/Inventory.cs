@@ -110,7 +110,7 @@ public class Inventory : MonoBehaviour
                     {
                         RemoveItemComponent(selectedSlot.transform);
                         slotTo.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
-                        if(slotTo.slotToSync) slotTo.slotToSync.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
+                        if (slotTo.slotToSync) slotTo.slotToSync.slotItem.itemNumber += selectedSlot.slotItem.itemNumber;
                     }
                     else
                     {
@@ -122,7 +122,7 @@ public class Inventory : MonoBehaviour
                         RemoveItemComponent(slotTo.transform);
 
                         slotTo.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.gameObject);
-                        if(slotTo.slotToSync) slotTo.slotToSync.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.slotToSync.gameObject);
+                        if (slotTo.slotToSync) slotTo.slotToSync.slotItem = CopyItemProperties(slotExchange.slotItem, slotTo.slotToSync.gameObject);
                         RemoveItemComponent(slotExchange.transform);
                     }
                 }
@@ -146,7 +146,7 @@ public class Inventory : MonoBehaviour
             {
                 selectedSlot.slotItem = CopyItemProperties(slotItem, selectedSlot.gameObject);
                 RemoveItemComponent(slotTo.transform);
-                if(slotTo.slotToSync) RemoveItemComponent(slotTo.slotToSync.transform);
+                if (slotTo.slotToSync) RemoveItemComponent(slotTo.slotToSync.transform);
                 Destroy(slotItem);
                 slotItem = null;
             }
@@ -189,11 +189,11 @@ public class Inventory : MonoBehaviour
             Destroy(slot.GetComponent<AudioSource>());
         }
     }
-    public GameObject AddItem(GameObject groundItem)
+    public GameObject AddItem(Item groundItem)
     {
         if (groundItem != null)
         {
-            if (groundItem.GetComponent<Item>().type.Contains("Stackable"))
+            if (groundItem.type.Contains("Stackable"))
             {
                 List<GameObject> slots = this.slots;
 
@@ -205,12 +205,11 @@ public class Inventory : MonoBehaviour
                 foreach (GameObject slotGO in slots)
                 {
                     Slot slot = slotGO.GetComponent<Slot>();
-                    Item item = groundItem.GetComponent<Item>();
 
                     if (slot.slotItem != null && slot.slotItem.type.Contains("Stackable") && slot.slotItem.itemName.Equals(groundItem.GetComponent<Item>().itemName))
                     {
-                        slot.slotItem.itemNumber += groundItem.GetComponent<Item>().itemNumber;
-                        if(slot.slotToSync) slot.slotToSync.slotItem.itemNumber += groundItem.GetComponent<Item>().itemNumber;
+                        slot.slotItem.itemNumber += groundItem.itemNumber;
+                        if (slot.slotToSync) slot.slotToSync.slotItem.itemNumber += groundItem.itemNumber;
 
                         Destroy(groundItem);
 
@@ -219,14 +218,14 @@ public class Inventory : MonoBehaviour
                     }
                 }
             }
-            if (TypeCorrespondanceCheck(groundItem.GetComponent<Item>(), "Equippable"))
+            if (TypeCorrespondanceCheck(groundItem, "Equippable"))
             {
                 foreach (Transform slotTrans in player.GetComponent<PlayerCharacterController>().handsItems)
                 {
                     Slot slot = slotTrans.GetChild(0).GetComponent<Slot>();
                     if (slot.GetComponent<Slot>().slotItem == null)
                     {
-                        Item item = groundItem.GetComponent<Item>();
+                        Item item = groundItem;
 
                         if (slot.slotItem == null && (TypeCorrespondanceCheck(item, slot.item_type) || slot.item_type.Contains("any")))
                         {
@@ -240,7 +239,7 @@ public class Inventory : MonoBehaviour
 
                             gameInterface.HandItemDisplayUpdate();
 
-                            if(slot.slotToSync) slot.slotToSync.slotItem = CopyItemProperties(item, slotTrans.GetChild(0).gameObject);
+                            if (slot.slotToSync) slot.slotToSync.slotItem = CopyItemProperties(item, slotTrans.GetChild(0).gameObject);
 
                             return null;
                         }
@@ -255,7 +254,7 @@ public class Inventory : MonoBehaviour
                 if (slot.slotItem == null && (TypeCorrespondanceCheck(item, slot.item_type) || slot.item_type.Contains("any")))
                 {
                     slot.slotItem = CopyItemProperties(item, slotGO);
-                    if(slot.slotToSync) slot.slotToSync.slotItem = CopyItemProperties(item, slotGO);
+                    if (slot.slotToSync) slot.slotToSync.slotItem = CopyItemProperties(item, slotGO);
 
                     Destroy(groundItem);
 
@@ -468,16 +467,17 @@ public class Inventory : MonoBehaviour
             if (!ejectStack && itemToEjectSlot.slotItem.itemNumber >= 2)
             {
                 itemToEjectSlot.slotItem.itemNumber -= 1;
-                if(itemToEjectSlot.slotToSync) itemToEjectSlot.slotToSync.slotItem.itemNumber -= 1;
+                if (itemToEjectSlot.slotToSync) itemToEjectSlot.slotToSync.slotItem.itemNumber -= 1;
             }
             else
             {
                 RemoveItemComponent(itemToEjectSlot.transform);
                 Destroy(itemToEjectSlot.slotItem);
                 itemToEjectSlot.slotItem = null;
-                if(itemToEjectSlot.slotToSync){
+                if (itemToEjectSlot.slotToSync)
+                {
                     Destroy(itemToEjectSlot.slotToSync);
-                     itemToEjectSlot.slotToSync.slotItem = null;
+                    itemToEjectSlot.slotToSync.slotItem = null;
                 }
             }
 

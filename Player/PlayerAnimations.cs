@@ -26,38 +26,35 @@ public class PlayerAnimations : MonoBehaviour
         armsAnim.SetBool("CheckBody", playerController.wantToCheckBody);
         armsAnim.SetBool("Sliding", playerController.sliding && !playerController.handItem);
 
-        if (gameInterface.bodyPartToCheck)
+        if (playerController.wantToCheckBody && gameInterface.bodyPartToCheck)
+        {
             switch (gameInterface.bodyPartToCheck.bodyPartName)
             {
                 case "Left Arm":
                     armsAnim.SetInteger("BodyPart", 1);
-                    playerController.addPan = 0;
                     break;
                 case "Right Arm":
                     armsAnim.SetInteger("BodyPart", 2);
-                    playerController.addPan = 0;
                     break;
                 case "Right Leg":
                     armsAnim.SetInteger("BodyPart", 3);
-                    playerController.addPan = 40;
                     break;
                 case "Left Leg":
                     armsAnim.SetInteger("BodyPart", 3);
-                    playerController.addPan = 40;
                     break;
                 default:
                     armsAnim.SetInteger("BodyPart", 0);
-                    playerController.addPan = 0;
                     break;
             }
+        }
         else
         {
             armsAnim.SetInteger("BodyPart", 0);
-            playerController.addPan = 0;
         }
 
         camAnim.SetBool("Aiming", playerController.IsAiming());
     }
+
     public void ShootAnim()
     {
         armsAnim.Play("ShootArms");

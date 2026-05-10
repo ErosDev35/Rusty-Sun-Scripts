@@ -8,12 +8,12 @@ public class OptionData
     public float sfxVolume = 0.5f;
     public float musicVolume = 0.5f;
     public float vSync = 1;
-    public float framerateTarget = 60;
     public float fov = 90;
     public float mouseSensitivity = 100;
     public float volumeMute = 0;
     public float screenResolution = 0;
     public float screenMode = 1;
+    public float fpsCap = 0;
     public float pixelisation = 1;
     public float dithering = 1;
     public float chromaticAberration = 1;
@@ -22,5 +22,7 @@ public class OptionData
     public Dictionary<int, Vector2Int> screenResolutionDict = new Dictionary<int, Vector2Int>()
     { { 0, new Vector2Int(1920, 1080) }, { 1, new Vector2Int(1366, 768) }, { 2, new Vector2Int(1280, 720) } };
     public Dictionary<int, FullScreenMode> screenModeDict = new Dictionary<int, FullScreenMode>()
-    { { 0, FullScreenMode.FullScreenWindow }, { 1, FullScreenMode.Windowed }};
+    { { 0, FullScreenMode.FullScreenWindow }, { 1, FullScreenMode.Windowed },{ 2, FullScreenMode.MaximizedWindow }};
+    public Dictionary<int, string> fpsCapDict = new Dictionary<int, string>()
+    { { 0, "Unlimited" }, { 1, "240" },{ 2, "180" },{ 3, "144" },{4,"60"},{5,"30"},{6,"15"}};
 }

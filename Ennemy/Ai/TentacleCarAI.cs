@@ -3,20 +3,31 @@ using UnityEngine.AI;
 
 public class TentacleCarAI : EnnemyPathfinding
 {
-    public Ennemy ennemy;
     public Transform player;
     public bool isBlind = false;
     void Start()
     {
-        ennemy = GetComponent<Ennemy>();
         animator = GetComponent<Animator>();
         navMeshAgent = GetComponent<NavMeshAgent>();
         player = GameObject.Find("Player").transform;
     }
     void Update()
     {
+        if (health <= 0) Die();
         Behaviour();
         GestionAnimation();
+    }
+    public new void shootInteraction(float damage = 0)
+    {
+        health -= damage;
+        print("Touché");
+        if (ennemyParticle != null)
+        {
+            ennemyParticle.gameObject.SetActive(true);
+            ennemyParticle.GetComponent<ParticleSystem>().Play();
+        }
+        if (ennemyState != EnnemyState.CHASING)
+            ennemyState = EnnemyState.ALERT;
     }
     void GestionAnimation()
     {
@@ -65,7 +76,7 @@ public class TentacleCarAI : EnnemyPathfinding
         GoToDestination(walkingSpeed, inspectPoint);
         if (timeAtSameObjective > 10)
         {
-            ennemy.ennemyState = EnnemyState.WANDERING;
+            ennemyState = EnnemyState.WANDERING;
         }
     }
     public void Chase()
@@ -74,8 +85,8 @@ public class TentacleCarAI : EnnemyPathfinding
 
         if (timeAtSameObjective > timeToBeBored)
         {
-            ennemy.ennemyState = EnnemyState.ALERT;
-            ennemy.suspectPoint = objectivePosition;
+            ennemyState = EnnemyState.ALERT;
+            suspectPoint = objectivePosition;
         }
     }
     public void Sleep()
@@ -88,7 +99,7 @@ public class TentacleCarAI : EnnemyPathfinding
         Wander();
         if (timeAtSameObjective > timeToBeBored)
         {
-            ennemy.ennemyState = EnnemyState.SLEEPING;
+            ennemyState = EnnemyState.SLEEPING;
         }
     }
 }

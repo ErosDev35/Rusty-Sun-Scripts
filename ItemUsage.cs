@@ -104,7 +104,7 @@ public class ItemUsage : MonoBehaviour
         {
             player.hunger += item.consommable.nutritiousValue;
             playerAnimations.EatAnimation();
-            if(slot.slotToSync) DestroyItem(slot.slotToSync);
+            if (slot.slotToSync) DestroyItem(slot.slotToSync);
             DestroyItem(slot);
             player.eatingFrames += 1;
         }
@@ -151,14 +151,14 @@ public class ItemUsage : MonoBehaviour
                 {
                     Debug.DrawRay(cMCam.transform.position, cMCam.transform.TransformDirection(Vector3.forward) * hit.distance, Color.blue);
                     print("J'ai touché " + hit.transform.name);
-                    if (hit.transform.GetComponent<Shootable>() != null || (hit.transform.parent != null && hit.transform.parent.GetComponent<Shootable>()))
+
+                    if (hit.transform.GetComponent<HitboxeEnnemy>()) hit.transform.GetComponent<HitboxeEnnemy>().Shooted((float)gun.damage, hit.point, player.transform.position);
+
+                    if (hit.transform.GetComponent<Shootable>() != null)
                     {
-                        if (hit.transform.GetComponent<Shootable>())
-                            hit.transform.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point, player.transform.position);
-                        else
-                            hit.transform.parent.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point, player.transform.position);
+                        hit.transform.GetComponent<Shootable>().shootInteraction((float)gun.damage, hit.point, player.transform.position);
                     }
-                    
+
                     GameObject hitInst = Instantiate(bulletCollisionParticle);
 
                     hitInst.transform.position = hit.point;

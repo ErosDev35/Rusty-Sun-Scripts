@@ -6,6 +6,7 @@ public class Shootable : MonoBehaviour
 
     public void shootInteraction(float damage = 0, Vector3 hitPos = new Vector3(), Vector3 playerPos = new Vector3(), float pushForce = 10)
     {
+        print("Shooté");
         switch (shootableType)
         {
             case "Ennemy":
