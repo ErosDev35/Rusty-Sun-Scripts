@@ -36,6 +36,8 @@ namespace AYellowpaper.SerializedCollections
         void Start()
         {
             Cursor.lockState = CursorLockMode.None;
+            saveFile = Application.persistentDataPath + "/gameoptions.data";
+            worldFiles = Application.persistentDataPath + "/world";
             initLoading();
         }
         void Update()
@@ -47,9 +49,6 @@ namespace AYellowpaper.SerializedCollections
         }
         void initLoading()
         {
-            saveFile = Application.persistentDataPath + "/gameoptions.data";
-            worldFiles = Application.persistentDataPath + "/world";
-
             if (File.Exists(saveFile))
             {
                 print("Fichier option trouvé ! ");
@@ -208,6 +207,7 @@ namespace AYellowpaper.SerializedCollections
         public void PlaySave(int index)
         {
             print("Save selected ! " + index);
+            PlayerPrefs.SetInt("playSave", index);
             SceneManager.LoadScene(sceneBuildIndex: 1);
         }
         public void LoadMainMenu()
@@ -247,20 +247,39 @@ namespace AYellowpaper.SerializedCollections
         }
         public void LoadWorld(int worldId)
         {
-            WorldData worldData = JsonUtility.FromJson<WorldData>(File.ReadAllText(worldFiles + worldId + ".data"));
-            print(worldData.worldId);
-
-            foreach (GameObject itemPrefab in worldData.itemsSaved)
+            print(worldFiles + worldId + ".data");
+            worldFiles = Application.persistentDataPath + "/world";
+            if (File.Exists(worldFiles + worldId + ".data"))
             {
-                int index = worldData.itemsSaved.IndexOf(itemPrefab);
+                WorldData worldData = JsonUtility.FromJson<WorldData>(File.ReadAllText(worldFiles + worldId + ".data"));
 
-                Vector3 itemSavedPos = worldData.itemSavedPos[index];
-                print(itemPrefab.GetComponent<Item>().itemName + " " + itemSavedPos);
-                var itemLoaded = Instantiate(itemPrefab);
+                // Section des items ................................ //
+                GameObject[] allItems = GameObject.FindGameObjectsWithTag("Item");
+                foreach (GameObject item in allItems) Destroy(item);
 
-                Item loadedItem = itemLoaded.GetComponent<Item>();
-                loadedItem.itemNumber = worldData.itemSavedNumber[index];
-                itemLoaded.transform.position = itemSavedPos;
+                foreach (GameObject itemPrefab in worldData.itemsSaved)
+                {
+                    int index = worldData.itemsSaved.IndexOf(itemPrefab);
+
+                    Vector3 itemSavedPos = worldData.itemSavedPos[index];
+                    print(itemPrefab.GetComponent<Item>().itemName + " " + itemSavedPos);
+                    var itemLoaded = Instantiate(itemPrefab);
+
+                    Item loadedItem = itemLoaded.GetComponent<Item>();
+                    loadedItem.itemNumber = worldData.itemSavedNumber[index];
+                    itemLoaded.transform.position = itemSavedPos;
+                }
+                //........................................................//
+                
+                // Section du joueur ................................ //
+                //........................................................//
+            }
+            else
+            {
+                print("Sauvegarde non trouvée, création d'une nouvelle sauvegarde");
+                WorldData worldData = new WorldData();
+                worldData.worldId = worldId;
+                WriteNewWorldData(worldData);
             }
 
             this.mainTabIndex = 0;

@@ -1,3 +1,5 @@
+using AYellowpaper.SerializedCollections;
+using UnityEditor;
 using UnityEngine;
 
 public class WorldBehaviour : MonoBehaviour
@@ -7,9 +9,18 @@ public class WorldBehaviour : MonoBehaviour
     public Material skyboxMaterial;
     public Color dayColor;
     public Color nightColor;
+    public MainMenuInterface mainMenuInterface;
     void Start()
     {
         skyboxMaterial = RenderSettings.skybox;
+        int saveToPlay = PlayerPrefs.GetInt("playSave", 0);
+        if (saveToPlay != 0)
+        {
+            mainMenuInterface.gameObject.SetActive(true);
+            mainMenuInterface.LoadWorld(saveToPlay);
+            mainMenuInterface.gameObject.SetActive(false);
+        }
+        PlayerPrefs.SetInt("playSave", 0);
     }
     void Update()
     {
@@ -17,18 +28,19 @@ public class WorldBehaviour : MonoBehaviour
     }
     void DayCycle()
     {
-        sun.Rotate(-1 * (dayCoefficient*Time.deltaTime),0,0);
+        sun.Rotate(-1 * (dayCoefficient * Time.deltaTime), 0, 0);
         Light light = sun.GetChild(0).GetComponent<Light>();
 
-        float dayCycle = map(light.transform.position.y,-150,150,0,1);
+        float dayCycle = map(light.transform.position.y, -150, 150, 0, 1);
         light.intensity = 1.5f * dayCycle;
 
-        skyboxMaterial.SetFloat("_SunHaloContribution",0.903f * dayCycle);
-        skyboxMaterial.SetFloat("_HorizonLineContribution",dayCycle);
-        skyboxMaterial.SetColor("_SkyGradientBottom",skyColorTransition(dayCycle));
-        skyboxMaterial.SetColor("_SkyGradientTop",skyColorTransition(dayCycle));
+        skyboxMaterial.SetFloat("_SunHaloContribution", 0.903f * dayCycle);
+        skyboxMaterial.SetFloat("_HorizonLineContribution", dayCycle);
+        skyboxMaterial.SetColor("_SkyGradientBottom", skyColorTransition(dayCycle));
+        skyboxMaterial.SetColor("_SkyGradientTop", skyColorTransition(dayCycle));
     }
-    float map(float x, float in_min, float in_max, float out_min, float out_max) {
+    float map(float x, float in_min, float in_max, float out_min, float out_max)
+    {
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
     Color skyColorTransition(float dayCycle)

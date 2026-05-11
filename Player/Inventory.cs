@@ -189,11 +189,11 @@ public class Inventory : MonoBehaviour
             Destroy(slot.GetComponent<AudioSource>());
         }
     }
-    public GameObject AddItem(Item groundItem)
+    public GameObject AddItem(GameObject groundItem)
     {
         if (groundItem != null)
         {
-            if (groundItem.type.Contains("Stackable"))
+            if (groundItem.GetComponent<Item>().type.Contains("Stackable"))
             {
                 List<GameObject> slots = this.slots;
 
@@ -205,33 +205,34 @@ public class Inventory : MonoBehaviour
                 foreach (GameObject slotGO in slots)
                 {
                     Slot slot = slotGO.GetComponent<Slot>();
+                    Item item = groundItem.GetComponent<Item>();
 
                     if (slot.slotItem != null && slot.slotItem.type.Contains("Stackable") && slot.slotItem.itemName.Equals(groundItem.GetComponent<Item>().itemName))
                     {
-                        slot.slotItem.itemNumber += groundItem.itemNumber;
-                        if (slot.slotToSync) slot.slotToSync.slotItem.itemNumber += groundItem.itemNumber;
+                        slot.slotItem.itemNumber += groundItem.GetComponent<Item>().itemNumber;
+                        if (slot.slotToSync) slot.slotToSync.slotItem.itemNumber += groundItem.GetComponent<Item>().itemNumber;
 
-                        Destroy(groundItem);
+                        if (groundItem.scene.IsValid()) Destroy(groundItem);
 
                         AllUpdate();
                         return null;
                     }
                 }
             }
-            if (TypeCorrespondanceCheck(groundItem, "Equippable"))
+            if (TypeCorrespondanceCheck(groundItem.GetComponent<Item>(), "Equippable"))
             {
                 foreach (Transform slotTrans in player.GetComponent<PlayerCharacterController>().handsItems)
                 {
                     Slot slot = slotTrans.GetChild(0).GetComponent<Slot>();
                     if (slot.GetComponent<Slot>().slotItem == null)
                     {
-                        Item item = groundItem;
+                        Item item = groundItem.GetComponent<Item>();
 
                         if (slot.slotItem == null && (TypeCorrespondanceCheck(item, slot.item_type) || slot.item_type.Contains("any")))
                         {
                             slot.slotItem = CopyItemProperties(item, slotTrans.GetChild(0).gameObject);
 
-                            Destroy(groundItem);
+                            if (groundItem.scene.IsValid()) Destroy(groundItem);
 
                             AllUpdate();
 
@@ -471,6 +472,7 @@ public class Inventory : MonoBehaviour
             }
             else
             {
+                ejectedItem.GetComponent<Item>().itemNumber = itemToEjectSlot.slotItem.itemNumber;
                 RemoveItemComponent(itemToEjectSlot.transform);
                 Destroy(itemToEjectSlot.slotItem);
                 itemToEjectSlot.slotItem = null;

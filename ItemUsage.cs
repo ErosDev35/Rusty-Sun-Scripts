@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using Unity.VisualScripting.AssemblyQualifiedNameParser;
+using System.Collections.Generic;
 
 public class ItemUsage : MonoBehaviour
 {
@@ -48,8 +49,25 @@ public class ItemUsage : MonoBehaviour
                 break;
 
             case "Medicine":
-                player.wantToHeal = true;
+                switch (item.medicine.medicineType)
+                {
+                    case "Anti-Bleeding":
+                        Eat(slot,item,player,false);
+                        AddAntibleedingToPlayer(player);
+                    break;
+                    default:
+                        player.wantToHeal = true;
+                    break;
+                }
                 break;
+        }
+    }
+    void AddAntibleedingToPlayer(PlayerCharacterController player)
+    {
+        List<BodyPart> playerBodyParts = player.playerHealth.bodyParts;
+        foreach(BodyPart bodyPart in playerBodyParts)
+        {
+            bodyPart.antibleedingApplied = Mathf.Clamp(bodyPart.antibleedingApplied + 1,0,1);
         }
     }
     void ReplaceArmorItem(Item item, PlayerCharacterController player, Slot slotUsed)
@@ -98,11 +116,11 @@ public class ItemUsage : MonoBehaviour
             Destroy(slot.slotItem);
         }
     }
-    public void Eat(Slot slot, Item item, PlayerCharacterController player)
+    public void Eat(Slot slot, Item item, PlayerCharacterController player, bool nutritious = true)
     {
-        if (player.hunger < 150 && player.eatingFrames <= 0)
+        if ((player.hunger < 150 || !nutritious) && player.eatingFrames <= 0)
         {
-            player.hunger += item.consommable.nutritiousValue;
+            player.hunger += (nutritious)? item.consommable.nutritiousValue : 0;
             playerAnimations.EatAnimation();
             if (slot.slotToSync) DestroyItem(slot.slotToSync);
             DestroyItem(slot);

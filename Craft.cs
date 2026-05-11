@@ -4,7 +4,7 @@ namespace AYellowpaper.SerializedCollections
 {
     public class Craft : MonoBehaviour
     {
-        public Item itemToCraft;
+        public GameObject itemToCraft;
         [SerializedDictionary("Resource Name", "Number")]
         public SerializedDictionary<string, int> craftNeeds;
         [SerializedDictionary("Skill Name", "Number")]

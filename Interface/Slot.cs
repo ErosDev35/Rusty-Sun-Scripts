@@ -19,7 +19,7 @@ public class Slot : MonoBehaviour
     public void OnHoverExit()
     {
         if(GameObject.Find("Bag").GetComponent<Inventory>() == null) return;
-        GameObject.Find("Bag").GetComponent<Inventory>().hoveredSlot = null;
+        else GameObject.Find("Bag").GetComponent<Inventory>().hoveredSlot = null;
     }
     void Update()
     {

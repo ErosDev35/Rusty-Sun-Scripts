@@ -12,28 +12,40 @@ public class BodyPart : MonoBehaviour
     public bool isInfected = false;
     public float infectionMultiplier = 0.001f;
     public float desinfectantApplied = 0;
+    public float antibleedingApplied = 0;
     public Medicine medicineApplied = null;
     void Update()
     {
         Infection();
         Bleed();
         DesinfectantDecrease();
+        AntiBleedingDecrease();
     }    
     public bool ShouldBleed()
     {
-        return (isBleeding && (GetComponent<Medicine>() == null || GetComponent<Medicine>().dirtynessRate >= 1f));
+        bool shouldBleed = isBleeding && (medicineApplied == null || medicineApplied.dirtynessRate >= 1f);
+        shouldBleed = (antibleedingApplied > 0.5)? false : shouldBleed;
+        return shouldBleed;
     }
     void Bleed()
     {
         if (ShouldBleed() || (bodyPartState == BodyPartState.SCARED && medicineApplied == null))
         {
-            bodyPartHealth -= Time.deltaTime;
+            bodyPartHealth -= Time.deltaTime * (1 - antibleedingApplied);
         }
+        if(ShouldBleed() && medicineApplied)
+        {
+            medicineApplied.dirtynessRate += Time.deltaTime / 10;
+        }
+    }
+    void AntiBleedingDecrease()
+    {
+        antibleedingApplied -= (antibleedingApplied > 0)? Time.deltaTime / 200 : 0;
     }
     void DesinfectantDecrease()
     {
         desinfectantApplied -= (desinfectantApplied > 0)? Time.deltaTime / 10 : 0;
-        infectionRate -= (infectionRate > 0 && desinfectantApplied > 0)? Time.deltaTime / 10 : 0;
+        infectionRate -= (infectionRate > 0 && desinfectantApplied > 0)? (Time.deltaTime / 10) * ((medicineApplied)? medicineApplied.dirtynessRate : 1) : 0;
     }
     void Infection()
     {

@@ -453,7 +453,7 @@ public class PlayerCharacterController : MonoBehaviour
         }
         else
         {
-            controller.height = 2 - 0.6f * Input.GetAxis("Crouch");
+            controller.height = 2 - (0.6f * Input.GetAxis("Crouch") * ((Physics.Raycast(transform.position, transform.up * -1, 1.2f))? 1 : 0));
         }
         Debug.DrawRay(transform.position, transform.up * 1.2f, Color.red);
         return controller.height != 2;
@@ -522,7 +522,7 @@ public class PlayerCharacterController : MonoBehaviour
         }
         wasGrounded = controller.isGrounded;
         oldVerticalSpeed = playerVelocity.y;
-        return playerVelocity.y < -8.5f;
+        return playerVelocity.y < -12.5f;
     }
     public void HurtPlayer(float damage = 0, List<string> bodyPart = null, float chanceToBleed = 0, float chanceToScar = 0, float chanceToDestroyBandages = 0, float chanceToBroke = 0, bool damageDispersal = false)
     {

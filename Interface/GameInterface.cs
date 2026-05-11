@@ -190,22 +190,6 @@ public class GameInterface : MonoBehaviour
         buildMenu.gameObject.SetActive(playerComponent.wantToBuild);
         preBuildVisualizer.gameObject.SetActive(playerComponent.preBuild);
 
-        //On vérifie qu'on peut build le build
-        if (playerComponent.wantToBuild)
-            foreach (Transform buildOption in buildMenu.GetChild(0).GetChild(0).GetChild(0))
-            {
-                bool canBuild = true;
-
-                foreach (var need in buildNeedsDict[buildOption.GetSiblingIndex()])
-                {
-                    if (howManyInventoryHave(need.Key) < need.Value) canBuild = false;
-                }
-
-                if (!canBuildThatBuild.ContainsKey(buildOption.GetSiblingIndex()) || (canBuildThatBuild.ContainsKey(buildOption.GetSiblingIndex()) && canBuildThatBuild[buildOption.GetSiblingIndex()] != canBuild))
-                    canBuildThatBuild[buildOption.GetSiblingIndex()] = canBuild;
-            }
-
-
         // Maintenant on place le build qu'on a choisit
         if (playerComponent.preBuild)
         {
@@ -249,16 +233,32 @@ public class GameInterface : MonoBehaviour
     {
         craftMenu.gameObject.SetActive(playerComponent.wantToCraft);
     }
-    void CraftItem(Craft craft)
+    public void CraftItem(Craft craft)
     {
-        bool canCraft = false;
+        print("on va crafter " + craft.itemToCraft.name);
+        bool canCraft = true;
 
         foreach (var need in craft.craftNeeds)
         {
-            if (howManyInventoryHave(need.Key) < need.Value) canCraft = false;
+            if (howManyInventoryHave(need.Key) < need.Value)
+            {
+                print("pas assez de " + need.Key);
+                canCraft = false;
+            }
         }
 
-        if (canCraft) playerComponent.inventory.GetComponent<Inventory>().AddItem(craft.itemToCraft);
+        if (canCraft)
+        {
+            foreach (var itemAsked in craft.craftNeeds)
+            {
+                int nbItemWanted = itemAsked.Value;
+                nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().slots, nbItemWanted, itemAsked.Key);
+                //nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().equippedSlots, nbItemWanted, itemAsked.Key);
+                print("reste " + nbItemWanted + " de " + itemAsked.Key);
+            }
+            playerComponent.inventory.GetComponent<Inventory>().AddItem(craft.itemToCraft);
+        }
+        else print("on ne peut pas craft " + craft.itemToCraft.name);
     }
     int howManyInventoryHave(string itemName)
     {
@@ -280,6 +280,7 @@ public class GameInterface : MonoBehaviour
                 amountOfThatResource += slot.slotItem.itemNumber;
             }
         }
+        print("on a " + amountOfThatResource + " de " + itemName);
         return amountOfThatResource;
     }
     void CraftBuild()
@@ -287,48 +288,35 @@ public class GameInterface : MonoBehaviour
         foreach (var itemAsked in buildNeedsDict[buildToBuildId])
         {
             int nbItemWanted = itemAsked.Value;
-            foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().slots)
+            nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().slots, nbItemWanted, itemAsked.Key);
+            //nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().equippedSlots, nbItemWanted, itemAsked.Key);
+            print("reste " + nbItemWanted + " de " + itemAsked.Key);
+        }
+    }
+    int DeleteCraftNeeds(List<GameObject> inventorySlots, int nbItemWanted, string itemName)
+    {
+        print("on va enlever " + nbItemWanted + " de " + itemName);
+        foreach (GameObject slotGo in inventorySlots)
+        {
+            Slot slot = slotGo.GetComponent<Slot>();
+            if (slot.slotItem && slot.slotItem.itemName.Contains(itemName) && nbItemWanted > 0)
             {
-                Slot slot = slotGo.GetComponent<Slot>();
-                if (slot.slotItem && slotGo.name != "SlotHotbar" && slot.slotItem.itemName.Contains(itemAsked.Key) && nbItemWanted > 0)
+                print("on enlève cet item");
+                int inventoryItemNumber = slot.slotItem.itemNumber;
+                if (slot.slotItem.itemNumber - nbItemWanted <= 0)
                 {
-                    print("on enlève cet item");
-                    int inventoryItemNumber = slot.slotItem.itemNumber;
-                    if (slot.slotItem.itemNumber - nbItemWanted <= 0)
-                    {
-                        playerComponent.inventory.GetComponent<Inventory>().RemoveItemComponent(slot.transform);
-                        Destroy(slot.slotItem);
-                        nbItemWanted -= inventoryItemNumber;
-                    }
-                    else
-                    {
-                        slot.slotItem.itemNumber -= nbItemWanted;
-                        nbItemWanted = 0;
-                    }
+                    playerComponent.inventory.GetComponent<Inventory>().RemoveItemComponent(slot.transform);
+                    Destroy(slot.slotItem);
+                    nbItemWanted -= inventoryItemNumber;
                 }
-            }
-            // RACCOURCIR STP C'EST HORRIBLE LA VIDA LOCA
-            foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().equippedSlots)
-            {
-                Slot slot = slotGo.GetComponent<Slot>();
-                if (slot.slotItem && slot.slotItem.itemName.Contains(itemAsked.Key) && nbItemWanted > 0)
+                else
                 {
-                    print("on enlève cet item");
-                    int inventoryItemNumber = slot.slotItem.itemNumber;
-                    if (slot.slotItem.itemNumber - nbItemWanted <= 0)
-                    {
-                        playerComponent.inventory.GetComponent<Inventory>().RemoveItemComponent(slot.transform);
-                        Destroy(slot.slotItem);
-                        nbItemWanted -= inventoryItemNumber;
-                    }
-                    else
-                    {
-                        slot.slotItem.itemNumber -= nbItemWanted;
-                        nbItemWanted = 0;
-                    }
+                    slot.slotItem.itemNumber -= nbItemWanted;
+                    nbItemWanted = 0;
                 }
             }
         }
+        return nbItemWanted;
     }
     void CrosshairShouldBeActive()
     {
@@ -589,6 +577,20 @@ public class GameInterface : MonoBehaviour
     public void PreBuild(Build buildToBuild)
     {
         this.buildToBuild = buildToBuild;
+
+        foreach (Transform buildOption in buildMenu.GetChild(0).GetChild(0).GetChild(0))
+        {
+            bool canBuild = true;
+
+            foreach (var need in buildNeedsDict[buildOption.GetSiblingIndex()])
+            {
+                if (howManyInventoryHave(need.Key) < need.Value) canBuild = false;
+            }
+
+            if (!canBuildThatBuild.ContainsKey(buildOption.GetSiblingIndex()) || (canBuildThatBuild.ContainsKey(buildOption.GetSiblingIndex()) && canBuildThatBuild[buildOption.GetSiblingIndex()] != canBuild))
+                canBuildThatBuild[buildOption.GetSiblingIndex()] = canBuild;
+        }
+
         if (canBuildThatBuild.ContainsKey(buildToBuild.transform.parent.GetSiblingIndex()) && canBuildThatBuild[buildToBuild.transform.parent.GetSiblingIndex()])
         {
             buildToBuildId = buildToBuild.transform.parent.GetSiblingIndex();
