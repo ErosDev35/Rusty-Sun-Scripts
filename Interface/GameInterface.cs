@@ -80,6 +80,8 @@ public class GameInterface : MonoBehaviour
     public Container container;
     public Transform slotPrefab;
     public Transform craftMenu;
+    public Terrain terrain;
+    public Vector3 grassRemoveOffset;
 
     void Start()
     {
@@ -169,8 +171,19 @@ public class GameInterface : MonoBehaviour
     void Pause()
     {
         cMCam.GetComponent<CinemachineVolumeSettings>().Profile = (gamePaused) ? pauseVolume : gameVolume;
-        if (Input.GetKeyDown(KeyCode.Escape) && !playerComponent.preBuild) gamePaused = !gamePaused;
-        else if (Input.GetKeyDown(KeyCode.Escape) && playerComponent.preBuild) playerComponent.preBuild = !playerComponent.preBuild;
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (!playerComponent.LookingAtUi())
+            {
+                if(!playerComponent.preBuild) gamePaused = !gamePaused;
+                else playerComponent.preBuild = !playerComponent.preBuild;
+            }
+            else
+            {
+                if(playerComponent.isLookingAtBag) playerComponent.isLookingAtBag = false;
+            }
+        }
+        
         pauseMenu.SetActive(gamePaused);
         Time.timeScale = (gamePaused) ? 0 : 1;
     }
@@ -196,26 +209,29 @@ public class GameInterface : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(cMCam.transform.position, cMCam.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, levelMask))
             {
-                bool canBuild = hit.distance < 8f;
-
-                preBuildVisualizer.GetComponent<MeshRenderer>().material = (canBuild) ? preBuildVisualizer.GetComponent<BuildPrevisualizer>().validBuild : preBuildVisualizer.GetComponent<BuildPrevisualizer>().invalidBuild;
-
                 preBuildVisualizer.transform.position = hit.point + buildToBuild.buildOffset;
                 preBuildVisualizer.transform.localPosition = hit.point + buildToBuild.buildOffset;
 
                 Vector3 playerDirection = player.transform.position - preBuildVisualizer.transform.position;
                 Vector3 rotationTowards = Vector3.RotateTowards(preBuildVisualizer.transform.forward, playerDirection, 10000, 0.0f);
                 float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
+
                 float direction = Vector3.Dot(hit.normal, hit.transform.forward);
                 float directionRight = Vector3.Dot(hit.normal, hit.transform.right);
 
                 rotationTowards += new Vector3(slopeAngle * directionRight * buildRotationIntensity, 90, slopeAngle * direction * buildRotationIntensity);
 
+                print(rotationTowards);
+
                 preBuildVisualizer.transform.rotation = Quaternion.LookRotation(rotationTowards);
 
                 preBuildVisualizer.transform.localScale = buildToBuild.buildPrefab.transform.localScale;
 
-                preBuildVisualizer.GetComponent<MeshFilter>().mesh = buildToBuild.buildPrefab.GetComponent<MeshFilter>().sharedMesh;
+                preBuildVisualizer.GetComponent<MeshFilter>().mesh = (buildToBuild.buildPrefab.GetComponent<MeshFilter>())? buildToBuild.buildPrefab.GetComponent<MeshFilter>().sharedMesh : buildToBuild.buildPrefab.transform.GetChild(1).GetComponent<MeshFilter>().sharedMesh;
+
+                bool canBuild = hit.distance < 8f && slopeAngle < 50f;
+
+                preBuildVisualizer.GetComponent<MeshRenderer>().material = (canBuild) ? preBuildVisualizer.GetComponent<BuildPrevisualizer>().validBuild : preBuildVisualizer.GetComponent<BuildPrevisualizer>().invalidBuild;
 
                 if (Input.GetAxis("Mouse LC") != 0 && canBuild)
                 {
@@ -223,12 +239,79 @@ public class GameInterface : MonoBehaviour
                     build.transform.position = hit.point + buildToBuild.buildOffset;
                     build.transform.rotation = preBuildVisualizer.transform.rotation;
                     playerComponent.preBuild = !playerComponent.preBuild;
+                    RemoveVegetationInRadius(build.transform.position, 1.75f, terrain);
                     CraftBuild();
                 }
             }
             if (playerComponent.wantToBuild) playerComponent.preBuild = false;
         }
     }
+    private Vector3 WorldPosToDetailPos(Vector3 worldPos, Terrain terrain)
+    {
+        print("hit point pos  : " + worldPos);
+        Vector3 terrainPos = terrain.GetPosition();
+        Vector3 relPos = worldPos - terrainPos;
+    
+        // Calculate normalized position (0 to 1)
+        float normX = relPos.x / terrain.terrainData.size.x;
+        float normZ = relPos.z / terrain.terrainData.size.z;
+    
+        // Convert to detail layer indices
+        int detailX = Mathf.FloorToInt(normX * terrain.terrainData.detailWidth);
+        int detailZ = Mathf.FloorToInt(normZ * terrain.terrainData.detailHeight);
+
+        print("detail pos  : " + new Vector3(detailX + grassRemoveOffset.x, 0, detailZ + grassRemoveOffset.z));
+    
+        return new Vector3(detailZ + grassRemoveOffset.z, 0, detailX + grassRemoveOffset.x);
+    }
+    void RemoveVegetationInRadius(Vector3 worldPos, float radius, Terrain terrain)
+    {
+        // Convert world position to detail layer center
+
+        Vector3 centerDetailPos = WorldPosToDetailPos(worldPos, terrain);
+        GameObject point = new GameObject();
+        point.transform.position = centerDetailPos;
+
+        int centerX = (int)centerDetailPos.x;
+        int centerZ = (int)centerDetailPos.z;
+    
+        // Convert radius to detail layer units
+        float radiusInDetails = radius / terrain.terrainData.size.x * terrain.terrainData.detailWidth;
+        int radiusInt = Mathf.CeilToInt(radiusInDetails);
+
+        // Loop through each detail layer
+        for (int layer = 0; layer < terrain.terrainData.detailPrototypes.Length; layer++)
+        {
+            // Get the current detail map for this layer
+            int[,] detailMap = terrain.terrainData.GetDetailLayer(0, 0, 
+                terrain.terrainData.detailWidth, 
+                terrain.terrainData.detailHeight, 
+                layer);
+
+            // Iterate through the square bounding box of the radius
+            for (int x = centerX - radiusInt; x <= centerX + radiusInt; x++)
+            {
+                for (int z = centerZ - radiusInt; z <= centerZ + radiusInt; z++)
+                {
+                    // Check boundaries
+                    if (x >= 0 && x < terrain.terrainData.detailWidth &&
+                        z >= 0 && z < terrain.terrainData.detailHeight)
+                    {
+                        // Check if within circle radius
+                        float dist = Mathf.Sqrt(Mathf.Pow(x - centerX, 2) + Mathf.Pow(z - centerZ, 2));
+                        if (dist <= radiusInt)
+                        {
+                            detailMap[x, z] = 0; // Remove detail
+                        }
+                    }
+                }
+            }
+        // Apply the modified map back to the terrain
+        terrain.terrainData.SetDetailLayer(0, 0, layer, detailMap);
+    }
+
+    terrain.Flush();
+    }   
     void CraftMenu()
     {
         craftMenu.gameObject.SetActive(playerComponent.wantToCraft);
@@ -283,6 +366,29 @@ public class GameInterface : MonoBehaviour
         print("on a " + amountOfThatResource + " de " + itemName);
         return amountOfThatResource;
     }
+    List<GameObject> WhichSlotWeTakeItemFrom(string itemName)
+    {
+        List<GameObject> slots = new List<GameObject>();
+
+        foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().slots)
+        {
+            Slot slot = slotGo.GetComponent<Slot>();
+            if (slot.slotItem && slotGo.name != "SlotHotbar" && slot.slotItem.itemName.Contains(itemName))
+            {
+                slots.Add(slot.gameObject);
+            }
+        }
+        foreach (GameObject slotGo in playerComponent.inventory.GetComponent<Inventory>().equippedSlots)
+        {
+            Slot slot = slotGo.GetComponent<Slot>();
+            if (slot.slotItem && slot.slotItem.itemName.Contains(itemName))
+            {
+                slots.Add(slot.gameObject);
+            }
+        }
+
+        return slots;
+    }
     void CraftBuild()
     {
         foreach (var itemAsked in buildNeedsDict[buildToBuildId])
@@ -290,18 +396,15 @@ public class GameInterface : MonoBehaviour
             int nbItemWanted = itemAsked.Value;
             nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().slots, nbItemWanted, itemAsked.Key);
             //nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().equippedSlots, nbItemWanted, itemAsked.Key);
-            print("reste " + nbItemWanted + " de " + itemAsked.Key);
         }
     }
     int DeleteCraftNeeds(List<GameObject> inventorySlots, int nbItemWanted, string itemName)
     {
-        print("on va enlever " + nbItemWanted + " de " + itemName);
         foreach (GameObject slotGo in inventorySlots)
         {
             Slot slot = slotGo.GetComponent<Slot>();
             if (slot.slotItem && slot.slotItem.itemName.Contains(itemName) && nbItemWanted > 0)
             {
-                print("on enlève cet item");
                 int inventoryItemNumber = slot.slotItem.itemNumber;
                 if (slot.slotItem.itemNumber - nbItemWanted <= 0)
                 {
@@ -346,6 +449,8 @@ public class GameInterface : MonoBehaviour
             itemSelectedCursor.GetComponent<Image>().color = new Color(1, 1, 1, 0);
             itemSelectedCursor.GetChild(0).GetComponent<Image>().color = (playerComponent.inventory.GetComponent<Inventory>().ItemSelectedSlot.slotItem == null) ? new Color(1, 1, 1, 0) : new Color(1, 1, 1, 1);
         }
+        Transform containerTransform = otherTab.parent;
+        containerTransform.GetComponent<Image>().color = (!mainTab)? new Color(255,255,255,0) : new Color(255,255,255,255);
 
         otherTab.GetChild(0).gameObject.SetActive(mainTab);
         otherTab.GetChild(1).gameObject.SetActive(!mainTab);
@@ -572,7 +677,7 @@ public class GameInterface : MonoBehaviour
     void CrouchVisualizer()
     {
         crouchOverlay.color = new Color(1, 1, 1, (playerComponent.isCrouching()) ? 0.25f : 0);
-        crouchOverlay.transform.GetChild(0).GetComponent<Image>().color = new Color(1, 1, 1, (playerComponent.isCrouching()) ? 0.15f : 0);
+        crouchOverlay.transform.GetChild(0).GetComponent<Image>().color = new Color(1, 1, 1, (playerComponent.isCrouching()) ? 0.5f : 0);
     }
     public void PreBuild(Build buildToBuild)
     {
@@ -623,7 +728,7 @@ public class GameInterface : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Mouse0))
             {
-                contextMenuCheckBody.gameObject.SetActive(false);
+                //contextMenuCheckBody.gameObject.SetActive(false);
                 if (nearestBodyPart) bodyPartToCheck = FindBodyPart(nearestBodyPart.name);
             }
 
@@ -648,6 +753,48 @@ public class GameInterface : MonoBehaviour
                 bodyPartDescriptor.GetChild(1).GetComponent<TextMeshProUGUI>().text = (MathF.Round(bodyPartToDisplay.bodyPartHealth * 100) / 100).ToString() + "%";
                 bodyPartDescriptor.GetChild(2).GetComponent<TextMeshProUGUI>().text = (bodyPartToDisplay.medicineApplied) ? "Bandaged" : bodyPartToDisplay.bodyPartState.ToString();
                 bodyPartDescriptor.GetChild(3).GetComponent<TextMeshProUGUI>().text = (bodyPartToDisplay.infectionRate == 0) ? "Not infected" : (MathF.Round(bodyPartToDisplay.infectionRate * 100) / 100).ToString();
+            }
+        }
+
+        // Menu de contexte
+
+        if (contextMenuCheckBody.gameObject.activeSelf)
+        {
+            contextMenuCheckBody.GetChild(1).GetComponent<TextMeshProUGUI>().text = bodyPartToCheck.bodyPartName;
+        }
+    }
+    public void contextMenuHeal(string medicine)
+    {
+        print("on utilise pour soigner : " + medicine);
+        if(howManyInventoryHave(medicine) >= 1)
+        {
+            switch (medicine)
+            {
+                case "Bandaid":
+                if(bodyPartToCheck.medicineApplied == null)
+                    {
+                        Medicine medicineToApply = bodyPartToCheck.gameObject.AddComponent<Medicine>();
+                        Medicine slotMedecine = WhichSlotWeTakeItemFrom("Bandaid")[0].GetComponent<Medicine>();
+                        print(slotMedecine.dirtynessRate);
+                        medicineToApply.medicineType = slotMedecine.medicineType;
+                        medicineToApply.dirtynessRate = slotMedecine.dirtynessRate;
+
+                        new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Bandaid")[0].transform);
+
+                        bodyPartToCheck.medicineApplied = medicineToApply;
+                    }
+                break;
+                
+                case "Alcool bottle":
+                    
+                break;
+
+                case "Saw":
+                if(bodyPartToCheck.bodyPartState != BodyPartState.AMPUTED)
+                    {
+                        bodyPartToCheck.bodyPartState = BodyPartState.AMPUTED;
+                    }
+                break;
             }
         }
     }

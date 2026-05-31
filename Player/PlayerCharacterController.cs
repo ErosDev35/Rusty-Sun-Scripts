@@ -126,7 +126,6 @@ public class PlayerCharacterController : MonoBehaviour
 
     void PrimaryActions()
     {
-        Move();
         Jump();
         ItemCheck();
         HandSlots();
@@ -136,6 +135,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void SecondaryActions()
     {
+        Move();
         Camera();
         Stamina();
         BagCheck();
@@ -225,7 +225,7 @@ public class PlayerCharacterController : MonoBehaviour
 
         //On récupère les input du joueur
 
-        Vector2 input = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+        Vector2 input = (LookingAtUi())? Vector2.zero : new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
         Vector3 move = new Vector3(input.x, 0, input.y);
 
         // Génération IA je suis tellement désolé mais je le savais pas comment faire
@@ -250,6 +250,7 @@ public class PlayerCharacterController : MonoBehaviour
         // On applique la gravité
 
         playerVelocity.y = (!groundedPlayer) ? playerVelocity.y + (2 * gravityValue * Time.deltaTime) : 0;
+        if(playerVelocity.y > 0 && Physics.Raycast(transform.position + new Vector3(0, 1, 0), transform.TransformDirection(Vector3.up), 0.15f)) playerVelocity.y = 0;
 
         inputMove = (move * (speedApplied / 2) * ((!sliding) ? sprintMultiplierApplied : 1));
 
@@ -323,7 +324,7 @@ public class PlayerCharacterController : MonoBehaviour
             inputMove = Vector3.zero;
             playerVelocity = Vector3.zero;
         }
-
+        
         if (isLookingAtBag)
         {
             foreach (Animator anim in gameInterface.hotbarSlotAnim)

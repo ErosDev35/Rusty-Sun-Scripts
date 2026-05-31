@@ -33,6 +33,7 @@ namespace AYellowpaper.SerializedCollections
         private List<string> keyBindings;
         string saveFile;
         string worldFiles;
+        public ItemCatalogue itemCatalogue;
         void Start()
         {
             Cursor.lockState = CursorLockMode.None;
@@ -218,6 +219,7 @@ namespace AYellowpaper.SerializedCollections
         }
         public void SaveWorld(int worldId)
         {
+            print("on save le monde " + worldId);
             Transform player = GameObject.Find("Player").transform;
             GameObject[] itemsToSave = GameObject.FindGameObjectsWithTag("Item");
             int itemSaveIndex = 0;
@@ -231,7 +233,7 @@ namespace AYellowpaper.SerializedCollections
             foreach (GameObject item in itemsToSave)
             {
                 Item itemComponent = item.GetComponent<Item>();
-                GameObject itemPrefab = itemComponent.itemPrefab;
+                String itemPrefab = itemComponent.itemPrefab.GetComponent<Item>().itemName;
 
                 worldData.itemsSaved.Insert(itemSaveIndex, itemPrefab);
                 worldData.itemSavedPos.Insert(itemSaveIndex, item.transform.position);
@@ -247,27 +249,31 @@ namespace AYellowpaper.SerializedCollections
         }
         public void LoadWorld(int worldId)
         {
-            print(worldFiles + worldId + ".data");
             worldFiles = Application.persistentDataPath + "/world";
+            print("LOAD : " + worldFiles + worldId + ".data");
             if (File.Exists(worldFiles + worldId + ".data"))
             {
                 WorldData worldData = JsonUtility.FromJson<WorldData>(File.ReadAllText(worldFiles + worldId + ".data"));
 
                 // Section des items ................................ //
+
                 GameObject[] allItems = GameObject.FindGameObjectsWithTag("Item");
                 foreach (GameObject item in allItems) Destroy(item);
 
-                foreach (GameObject itemPrefab in worldData.itemsSaved)
-                {
-                    int index = worldData.itemsSaved.IndexOf(itemPrefab);
+                if(itemCatalogue){
+                    foreach (String itemPrefab in worldData.itemsSaved)
+                    {
+                        GameObject prefab = itemCatalogue.itemPrefabDictionnary[itemPrefab];
+                        int index = worldData.itemsSaved.IndexOf(itemPrefab);
 
-                    Vector3 itemSavedPos = worldData.itemSavedPos[index];
-                    print(itemPrefab.GetComponent<Item>().itemName + " " + itemSavedPos);
-                    var itemLoaded = Instantiate(itemPrefab);
+                        Vector3 itemSavedPos = worldData.itemSavedPos[index];
+                        print(itemPrefab + " " + itemSavedPos);
+                        var itemLoaded = Instantiate(prefab);
 
-                    Item loadedItem = itemLoaded.GetComponent<Item>();
-                    loadedItem.itemNumber = worldData.itemSavedNumber[index];
-                    itemLoaded.transform.position = itemSavedPos;
+                        Item loadedItem = itemLoaded.GetComponent<Item>();
+                        loadedItem.itemNumber = worldData.itemSavedNumber[index];
+                        itemLoaded.transform.position = itemSavedPos;
+                    }
                 }
                 //........................................................//
                 

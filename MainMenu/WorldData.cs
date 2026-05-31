@@ -14,7 +14,7 @@ public class WorldData
     public Vector3 playerSavedPos = Vector3.zero;
     public Vector3 playerSavedRotation = Vector3.zero;
     //Items infos
-    public List<GameObject> itemsSaved = new List<GameObject>();
+    public List<String> itemsSaved = new List<String>();
     public List<Vector3> itemSavedPos = new List<Vector3>();
     public List<int> itemSavedNumber = new List<int>();
     //Entities infos

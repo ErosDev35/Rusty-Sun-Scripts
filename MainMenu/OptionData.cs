@@ -12,7 +12,7 @@ public class OptionData
     public float mouseSensitivity = 100;
     public float volumeMute = 0;
     public float screenResolution = 0;
-    public float screenMode = 1;
+    public float screenMode = 0;
     public float fpsCap = 0;
     public float pixelisation = 1;
     public float dithering = 1;
