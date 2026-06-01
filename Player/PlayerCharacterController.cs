@@ -19,11 +19,6 @@ public class PlayerCharacterController : MonoBehaviour
     private CinemachineBasicMultiChannelPerlin cMChannelPerlin;
     private CinemachinePositionComposer cMPositionComposer;
     public float explosionCam = 0;
-    //.....................................................
-
-    //UI Section
-
-    public GameInterface gameInterface;
 
     //.....................................................
 
@@ -80,7 +75,6 @@ public class PlayerCharacterController : MonoBehaviour
     public float invincibilityFrames = 0;
     public bool wantToHeal = false;
     public bool wantToCheckBody = false;
-    public float eatingFrames = 0;
     public float throwingFrames = 0;
     public bool onMeleeCooldown = false;
     //House Section
@@ -152,6 +146,8 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Camera()
     {
+        GameInterface gameInterface = GameInterface.Instance;
+
         float bagAngle = Mathf.Round(Vector3.Distance(transform.up * -1, cMCam.transform.forward) * 100) / 100;
         int panDirection = (bagAngle != 1f ? (bagAngle < 1f) ? -1 : 1 : 0);
 
@@ -307,6 +303,8 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void BagCheck()
     {
+        GameInterface gameInterface = GameInterface.Instance;
+
         if (Input.GetKeyDown("tab") && !preBuild && Mathf.Abs(playerVelocity.y) < 0.4f && (!LookingAtUi() || LookingAtUi() && isLookingAtBag))
         {
             isLookingAtBag = !isLookingAtBag;
@@ -337,7 +335,9 @@ public class PlayerCharacterController : MonoBehaviour
     {
         if (isLookingAtADoor() && Input.GetKeyDown("e"))
         {
-            print("JE VEUX ENTRER");
+            Door door = doorLookingAt.GetComponent<Door>();
+            door.doorOpen = !door.doorOpen;
+            doorLookingAt.GetComponent<Animator>().SetBool("Close/Open", door.doorOpen);
         }
     }
     void ItemCheck()
@@ -372,6 +372,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void HandSlots()
     {
+        GameInterface gameInterface = GameInterface.Instance;
         float mouseScroll = 0;
         int itemChoice = 0;
 
@@ -419,7 +420,6 @@ public class PlayerCharacterController : MonoBehaviour
         starvingDebuff += (starvingMultiplier / 2) + (0.75 * running) + (0.90 * jumping) + (0.25 * outOfBreath);
 
         hunger -= (hunger > 0) ? Time.deltaTime * starvingDebuff : 0;
-        eatingFrames -= (eatingFrames > 0) ? Time.deltaTime : 0;
     }
     void EjectItem()
     {
@@ -650,6 +650,8 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public bool LookingAtUi()
     {
+        GameInterface gameInterface = GameInterface.Instance;
+        
         bool uiLook = isLookingAtBag || wantToBuild || wantToHeal || wantToCheckBody || wantToCraft || gameInterface.gamePaused;
 
         return uiLook;
@@ -660,6 +662,8 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void CheckOnBody()
     {
+        GameInterface gameInterface = GameInterface.Instance;
+
         bool checkBody = (((Input.GetKeyDown("h") && !isLookingAtBag && !wantToHeal) && onGround) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToCheckBody)) ? !wantToCheckBody : wantToCheckBody;
         if (checkBody != wantToCheckBody) gameInterface.bodyPartToCheck = playerHealth.bodyParts[2];
         wantToCheckBody = checkBody;

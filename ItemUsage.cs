@@ -19,6 +19,7 @@ public class ItemUsage : MonoBehaviour
     }
     public void ItemUse(Slot slot = null, Item item = null, PlayerCharacterController player = null)
     {
+        if(GameInterface.Instance.actionName == ""){
         if ((item.oneHanded || !item.oneHanded && !item.twoHanded) && player.IsAiming())
         {
             throwItem(slot, item, player);
@@ -60,6 +61,7 @@ public class ItemUsage : MonoBehaviour
                     break;
                 }
                 break;
+        }
         }
     }
     void AddAntibleedingToPlayer(PlayerCharacterController player)
@@ -118,19 +120,27 @@ public class ItemUsage : MonoBehaviour
     }
     public void Eat(Slot slot, Item item, PlayerCharacterController player, bool nutritious = true)
     {
-        if ((player.hunger < 150 || !nutritious) && player.eatingFrames <= 0)
+        if ((player.hunger < 150 || !nutritious))
         {
+            while(GameInterface.Instance.actionName != null)
+            {
+            GameInterface.Instance.SetActionTime(item.consommable.timeToEat, "Eating");
+            while(GameInterface.Instance.actionName != null)
+            {
+                return;
+            }
             player.hunger += (nutritious)? item.consommable.nutritiousValue : 0;
             playerAnimations.EatAnimation();
             if (slot.slotToSync) DestroyItem(slot.slotToSync);
             DestroyItem(slot);
-            player.eatingFrames += 1;
+            }
         }
         else
         {
             print("jié trop mangé");
         }
     }
+
     public void throwItem(Slot slot, Item item, PlayerCharacterController player)
     {
         if (player.throwingFrames <= 0)

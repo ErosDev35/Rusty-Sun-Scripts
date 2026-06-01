@@ -21,10 +21,10 @@ public class Ennemy : MonoBehaviour
     {
         if (health <= 0) Die();
     }
-    public void shootInteraction(float damage = 0)
+    public virtual void shootInteraction(float damage = 0)
     {
         health -= damage;
-        print("Touché");
+        print("Touché shoot interaction basic");
         if (ennemyParticle != null)
         {
             ennemyParticle.gameObject.SetActive(true);

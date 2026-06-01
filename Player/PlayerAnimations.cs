@@ -15,16 +15,19 @@ public class PlayerAnimations : MonoBehaviour
 
     void GestionAnimatorBools()
     {
-        armsAnim.SetBool("HoldingItem", playerController.handItem != null && !playerController.handItem.twoHanded && !playerController.wantToCheckBody && !playerController.preBuild);
-        armsAnim.SetBool("HoldingItemTwoHanded", playerController.handItem != null && playerController.handItem.twoHanded && !playerController.wantToCheckBody && !playerController.preBuild);
-        armsAnim.SetBool("HoldingItemOneHanded", playerController.handItem != null && playerController.handItem.oneHanded && !playerController.wantToCheckBody && !playerController.preBuild);
-        armsAnim.SetBool("HoldingBoombox", playerController.handItem != null && playerController.handItem.itemName == "Boombox" && !playerController.wantToCheckBody && !playerController.preBuild);
+        bool isActing = gameInterface.actionName != "";
+
+        armsAnim.SetBool("HoldingItem", playerController.handItem != null && !playerController.handItem.twoHanded && !playerController.wantToCheckBody && !playerController.preBuild && !isActing);
+        armsAnim.SetBool("HoldingItemTwoHanded", playerController.handItem != null && playerController.handItem.twoHanded && !playerController.wantToCheckBody && !playerController.preBuild && !isActing);
+        armsAnim.SetBool("HoldingItemOneHanded", playerController.handItem != null && playerController.handItem.oneHanded && !playerController.wantToCheckBody && !playerController.preBuild && !isActing);
+        armsAnim.SetBool("HoldingBoombox", playerController.handItem != null && playerController.handItem.itemName == "Boombox" && !playerController.wantToCheckBody && !playerController.preBuild && !isActing);
         armsAnim.SetBool("Running", playerController.isRunning() && (playerController.inputMove.x + playerController.inputMove.z != 0));
         armsAnim.SetBool("Crouching", playerController.isCrouching());
         armsAnim.SetBool("Jumping", playerController.IsFalling());
         armsAnim.SetBool("Aiming", playerController.IsAiming());
-        armsAnim.SetBool("CheckBody", playerController.wantToCheckBody);
-        armsAnim.SetBool("Sliding", playerController.sliding && !playerController.handItem);
+        armsAnim.SetBool("CheckBody", playerController.wantToCheckBody && !isActing);
+        armsAnim.SetBool("Sliding", playerController.sliding && !playerController.handItem && !isActing);
+        armsAnim.SetBool("ActionTakeTime", isActing);
 
         if (playerController.wantToCheckBody && gameInterface.bodyPartToCheck)
         {

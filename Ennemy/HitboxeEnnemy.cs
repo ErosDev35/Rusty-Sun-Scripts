@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class HitboxeEnnemy : MonoBehaviour
 {
-    public Shootable shootable;
+    Shootable shootable;
     public float damageMultiplier = 1;
     public void Start()
     {
-        shootable = transform.parent.GetComponent<Shootable>();
+        shootable = transform.parent.GetComponentInParent<Shootable>();
     }
     public void Shooted(float damage = 0, Vector3 hitPos = new Vector3(), Vector3 playerPos = new Vector3())
     {

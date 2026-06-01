@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class TentacleCarAI : EnnemyPathfinding
+public class BellMonsterAI : EnnemyPathfinding
 {
     public Transform player;
     public bool isBlind = false;
@@ -75,7 +75,7 @@ public class TentacleCarAI : EnnemyPathfinding
     public void Inspect(Vector3 inspectPoint)
     {
         GoToDestination(walkingSpeed, inspectPoint);
-        if (timeAtSameObjective > 10)
+        if (timeAtSameObjective > 20)
         {
             ennemyState = EnnemyState.WANDERING;
         }
@@ -93,7 +93,7 @@ public class TentacleCarAI : EnnemyPathfinding
     public void Sleep()
     {
         Sleeping();
-        animator.Play("Sleeping");
+        //animator.Play("Sleeping");
     }
     void Wandering()
     {

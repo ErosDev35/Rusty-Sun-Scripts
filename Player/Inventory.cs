@@ -4,7 +4,6 @@ using TMPro;
 
 public class Inventory : MonoBehaviour
 {
-    public GameInterface gameInterface;
     public Dictionary<string, Vector4> bags = new Dictionary<string, Vector4>();
     public string bagWear = "Hands";
     public string bagWearOld = "";
@@ -189,6 +188,7 @@ public class Inventory : MonoBehaviour
     }
     public GameObject AddItem(GameObject groundItem)
     {
+        GameInterface gameInterface = GameInterface.Instance;
         if (groundItem != null)
         {
             if (groundItem.GetComponent<Item>().type.Contains("Stackable"))
@@ -318,6 +318,7 @@ public class Inventory : MonoBehaviour
             consommable.nutritiousValue = itemGrab.consommable.nutritiousValue;
             consommable.spoilingRate = itemGrab.consommable.spoilingRate;
             consommable.isSpoiled = itemGrab.consommable.isSpoiled;
+            consommable.timeToEat = itemGrab.consommable.timeToEat;
 
             item.consommable = consommable;
         }
@@ -452,6 +453,7 @@ public class Inventory : MonoBehaviour
     }
     public GameObject EjectItem(Slot itemToEjectSlot = null, bool ejectStack = true)
     {
+        GameInterface gameInterface = GameInterface.Instance;
         gameInterface.SoundSync();
         if (itemToEjectSlot && itemToEjectSlot.slotItem != null)
         {

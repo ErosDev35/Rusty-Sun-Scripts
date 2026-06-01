@@ -11,8 +11,22 @@ using System;
 using UnityEditor;
 using NUnit.Framework;
 using Unity.VisualScripting;
+using System.Net.NetworkInformation;
 public class GameInterface : MonoBehaviour
 {
+    public static GameInterface Instance {get; private set;}
+    private void Awake() 
+    { 
+        if (Instance != null && Instance != this) 
+        { 
+            Destroy(this); 
+        } 
+        else 
+        { 
+            Instance = this; 
+        } 
+    }
+    
     public GameObject player;
     public PlayerCharacterController playerComponent;
     public RectTransform stamina;
@@ -82,7 +96,10 @@ public class GameInterface : MonoBehaviour
     public Transform craftMenu;
     public Terrain terrain;
     public Vector3 grassRemoveOffset;
-
+    private float timeAction = 0;
+    private float maxTimeAction = 100;
+    public Slider actionProgressBar;
+    public string actionName;
     void Start()
     {
         bag.gameObject.SetActive(false);
@@ -197,6 +214,24 @@ public class GameInterface : MonoBehaviour
         BuildMenu();
         BodyCheck();
         CraftMenu();
+        ActionTime();
+    }
+    void ActionTime()
+    {
+        actionProgressBar.gameObject.SetActive(timeAction > 0);
+        actionName = (timeAction > 0)? actionName : "";
+
+        if(timeAction > 0)
+        {
+            actionProgressBar.value = (100 - (100 * (timeAction / maxTimeAction)));
+            timeAction -= Time.deltaTime;
+        }
+    }
+    public void SetActionTime(float actionTime, string actionName)
+    {
+        timeAction = actionTime;
+        maxTimeAction = actionTime;
+        this.actionName = actionName;
     }
     void BuildMenu()
     {
@@ -485,7 +520,7 @@ public class GameInterface : MonoBehaviour
         : (playerComponent.doorLookingAt != null) ? itemPlayerLooking.GetComponent<Door>().doorName :
         itemPlayerLooking.GetComponent<Build>().buildName : "";
 
-        string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to enter" : "[E] to interact" : "";
+        string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to open" : "[E] to interact" : "";
         descriptor += (itemPlayerLooking != null && itemPlayerLooking.GetComponent<CustomItemBehaviour>()) ? " [F] " + itemPlayerLooking.GetComponent<CustomItemBehaviour>().GetDescriptorState() : "";
 
         itemName.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = descriptor;
@@ -766,12 +801,13 @@ public class GameInterface : MonoBehaviour
     public void contextMenuHeal(string medicine)
     {
         print("on utilise pour soigner : " + medicine);
+        bool notNormal = bodyPartToCheck.bodyPartState != BodyPartState.NORMAL && bodyPartToCheck.bodyPartState != BodyPartState.WEAK;
         if(howManyInventoryHave(medicine) >= 1)
         {
             switch (medicine)
             {
                 case "Bandaid":
-                if(bodyPartToCheck.medicineApplied == null)
+                    if(bodyPartToCheck.medicineApplied == null && notNormal)
                     {
                         Medicine medicineToApply = bodyPartToCheck.gameObject.AddComponent<Medicine>();
                         Medicine slotMedecine = WhichSlotWeTakeItemFrom("Bandaid")[0].GetComponent<Medicine>();
@@ -786,7 +822,10 @@ public class GameInterface : MonoBehaviour
                 break;
                 
                 case "Alcool bottle":
-                    
+                if(notNormal){
+                    bodyPartToCheck.desinfectantApplied = 100;
+                    new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Alcool bottle")[0].transform);
+                }
                 break;
 
                 case "Saw":

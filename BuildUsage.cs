@@ -6,15 +6,15 @@ public class BuildUsage : MonoBehaviour
 {
     Build build;
     PlayerCharacterController player;
-    GameInterface gameInterface;
     void Start()
     {
         player = GameObject.Find("Player").GetComponent<PlayerCharacterController>();
-        gameInterface = player.gameInterface;
         build = GetComponent<Build>();
     }
     public void BuildUse()
     {
+        GameInterface gameInterface = GameInterface.Instance;
+        
         switch (build.buildCategory)
         {
             case "Container":
