@@ -599,6 +599,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public void HealPlayer(string bodyPartToHeal = null, Medicine medicine = null)
     {
+        GameInterface gameInterface = GameInterface.Instance;
         if (bodyPartToHeal == null || medicine == null) return;
 
         print("Partie à soigner : " + bodyPartToHeal);
@@ -615,11 +616,16 @@ public class PlayerCharacterController : MonoBehaviour
 
                         if (bodyPart.medicineApplied == null)
                         {
-                            Medicine medicineOnBodyPart = transform.AddComponent<Medicine>();
-                            medicineOnBodyPart.medicineType = medicine.medicineType;
+                            void bandage()
+                            {
+                                Medicine medicineOnBodyPart = transform.AddComponent<Medicine>();
+                                medicineOnBodyPart.medicineType = medicine.medicineType;
 
-                            medicine.gameObject.GetComponent<ItemUsage>().DestroyItem(handItem.gameObject.GetComponent<Slot>());
-                            bodyPart.medicineApplied = medicineOnBodyPart;
+                                medicine.gameObject.GetComponent<ItemUsage>().DestroyItem(handItem.gameObject.GetComponent<Slot>());
+                                bodyPart.medicineApplied = medicineOnBodyPart;
+                            }
+
+                            gameInterface.RunMethodAfterActionTime(bandage, 10, "Bandage");
                         }
                         else
                         {
@@ -633,8 +639,12 @@ public class PlayerCharacterController : MonoBehaviour
                 {
                     if (bodyPart.bodyPartName.Contains(bodyPartToHeal))
                     {
-                        print("On soigne : " + bodyPart.bodyPartName);
-                        bodyPart.desinfectantApplied = 100;
+                        void Desinfect(){
+                            print("On soigne : " + bodyPart.bodyPartName);
+                            bodyPart.desinfectantApplied = 100;
+                        }
+                        
+                        gameInterface.RunMethodAfterActionTime(Desinfect, 10, "Bandage");
                     }
                 }
                 break;

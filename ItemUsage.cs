@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Unity.VisualScripting.AssemblyQualifiedNameParser;
 using System.Collections.Generic;
+using System;
 
 public class ItemUsage : MonoBehaviour
 {
@@ -120,20 +121,19 @@ public class ItemUsage : MonoBehaviour
     }
     public void Eat(Slot slot, Item item, PlayerCharacterController player, bool nutritious = true)
     {
-        if ((player.hunger < 150 || !nutritious))
+        GameInterface gameInterface = GameInterface.Instance;
+
+        void EatMechanism()
         {
-            while(GameInterface.Instance.actionName != null)
-            {
-            GameInterface.Instance.SetActionTime(item.consommable.timeToEat, "Eating");
-            while(GameInterface.Instance.actionName != null)
-            {
-                return;
-            }
             player.hunger += (nutritious)? item.consommable.nutritiousValue : 0;
             playerAnimations.EatAnimation();
             if (slot.slotToSync) DestroyItem(slot.slotToSync);
             DestroyItem(slot);
-            }
+        }
+
+        if ((player.hunger < 150 || !nutritious))
+        {
+            gameInterface.RunMethodAfterActionTime(EatMechanism, (nutritious)? item.consommable.timeToEat : 0.25f, "Eating");
         }
         else
         {
@@ -173,7 +173,7 @@ public class ItemUsage : MonoBehaviour
 
                 float gunAccuracy = player.GetComponent<PlayerCharacterController>().firearmAccuracy;
                 gunAccuracy += (1 / gun.accuracy) * 1000;
-                gunAccuracy = (gunAccuracy <= 0) ? Random.Range(-1f, 1f) / 100 : Random.Range(-gunAccuracy, gunAccuracy) / 100;
+                gunAccuracy = (gunAccuracy <= 0) ? UnityEngine.Random.Range(-1f, 1f) / 100 : UnityEngine.Random.Range(-gunAccuracy, gunAccuracy) / 100;
 
                 if (Physics.Raycast(cMCam.transform.position, cMCam.TransformDirection(Vector3.forward + new Vector3(gunAccuracy, 0, 0)), out hit, Mathf.Infinity))
                 {
@@ -195,7 +195,7 @@ public class ItemUsage : MonoBehaviour
                     hitInst.transform.rotation = player.GetComponent<PlayerCharacterController>().cMCam.rotation;
                 }
 
-                player.GetComponent<PlayerCharacterController>().firearmKnockback += Random.Range(gun.knockback / 2, gun.knockback);
+                player.GetComponent<PlayerCharacterController>().firearmKnockback += UnityEngine.Random.Range(gun.knockback / 2, gun.knockback);
 
                 i++;
             }

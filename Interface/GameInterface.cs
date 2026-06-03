@@ -12,6 +12,7 @@ using UnityEditor;
 using NUnit.Framework;
 using Unity.VisualScripting;
 using System.Net.NetworkInformation;
+using System.Collections;
 public class GameInterface : MonoBehaviour
 {
     public static GameInterface Instance {get; private set;}
@@ -188,19 +189,28 @@ public class GameInterface : MonoBehaviour
     void Pause()
     {
         cMCam.GetComponent<CinemachineVolumeSettings>().Profile = (gamePaused) ? pauseVolume : gameVolume;
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            bool shouldPause = true;
             if (!playerComponent.LookingAtUi())
             {
-                if(!playerComponent.preBuild) gamePaused = !gamePaused;
-                else playerComponent.preBuild = !playerComponent.preBuild;
+                shouldPause = (playerComponent.preBuild || actionName != "")? false : true;
+
+                if(playerComponent.preBuild) playerComponent.preBuild = !playerComponent.preBuild;
+
+                if(actionName != ""){
+                    StopCoroutine(WaitMethodLoop()); 
+                    actionName = "";
+                } 
             }
             else
             {
                 if(playerComponent.isLookingAtBag) playerComponent.isLookingAtBag = false;
             }
+            gamePaused = shouldPause;
         }
-        
+
         pauseMenu.SetActive(gamePaused);
         Time.timeScale = (gamePaused) ? 0 : 1;
     }
@@ -218,8 +228,7 @@ public class GameInterface : MonoBehaviour
     }
     void ActionTime()
     {
-        actionProgressBar.gameObject.SetActive(timeAction > 0);
-        actionName = (timeAction > 0)? actionName : "";
+        actionProgressBar.gameObject.SetActive(actionName != "");
 
         if(timeAction > 0)
         {
@@ -227,11 +236,28 @@ public class GameInterface : MonoBehaviour
             timeAction -= Time.deltaTime;
         }
     }
-    public void SetActionTime(float actionTime, string actionName)
+    public void RunMethodAfterActionTime(Action methodToRun, float actionTime, string actionName)
+    {
+        StartCoroutine(WaitMethodLoop(methodToRun, actionTime, actionName));
+    }
+    IEnumerator WaitMethodLoop(Action methodToRun = null, float actionTime = 0, string actionName = null)
     {
         timeAction = actionTime;
         maxTimeAction = actionTime;
         this.actionName = actionName;
+
+        while(timeAction > 0)
+        {
+            print("on attend");
+            if(this.actionName == "") break;
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        if(this.actionName != ""){
+            print("fin de l'attente");
+            this.actionName = "";
+            methodToRun();
+        }
     }
     void BuildMenu()
     {
@@ -801,6 +827,7 @@ public class GameInterface : MonoBehaviour
     public void contextMenuHeal(string medicine)
     {
         print("on utilise pour soigner : " + medicine);
+        contextMenuCheckBody.gameObject.SetActive(false);
         bool notNormal = bodyPartToCheck.bodyPartState != BodyPartState.NORMAL && bodyPartToCheck.bodyPartState != BodyPartState.WEAK;
         if(howManyInventoryHave(medicine) >= 1)
         {
@@ -809,29 +836,38 @@ public class GameInterface : MonoBehaviour
                 case "Bandaid":
                     if(bodyPartToCheck.medicineApplied == null && notNormal)
                     {
-                        Medicine medicineToApply = bodyPartToCheck.gameObject.AddComponent<Medicine>();
-                        Medicine slotMedecine = WhichSlotWeTakeItemFrom("Bandaid")[0].GetComponent<Medicine>();
-                        print(slotMedecine.dirtynessRate);
-                        medicineToApply.medicineType = slotMedecine.medicineType;
-                        medicineToApply.dirtynessRate = slotMedecine.dirtynessRate;
+                        void Bandage(){
+                            Medicine medicineToApply = bodyPartToCheck.gameObject.AddComponent<Medicine>();
+                            Medicine slotMedecine = WhichSlotWeTakeItemFrom("Bandaid")[0].GetComponent<Medicine>();
 
-                        new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Bandaid")[0].transform);
+                            medicineToApply.medicineType = slotMedecine.medicineType;
+                            medicineToApply.dirtynessRate = slotMedecine.dirtynessRate;
 
-                        bodyPartToCheck.medicineApplied = medicineToApply;
+                            new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Bandaid")[0].transform);
+
+                            bodyPartToCheck.medicineApplied = medicineToApply;
+                        }
+                        RunMethodAfterActionTime(Bandage, 5, "Bandage");
                     }
                 break;
                 
                 case "Alcool bottle":
                 if(notNormal){
-                    bodyPartToCheck.desinfectantApplied = 100;
-                    new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Alcool bottle")[0].transform);
+                    void Desinfect(){
+                        bodyPartToCheck.desinfectantApplied = 100;
+                        new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Alcool bottle")[0].transform);
+                    }
+                    RunMethodAfterActionTime(Desinfect, 5, "Desinfect");
                 }
                 break;
 
                 case "Saw":
                 if(bodyPartToCheck.bodyPartState != BodyPartState.AMPUTED)
                     {
-                        bodyPartToCheck.bodyPartState = BodyPartState.AMPUTED;
+                        void Saw(){
+                            bodyPartToCheck.bodyPartState = BodyPartState.AMPUTED;
+                        }
+                        RunMethodAfterActionTime(Saw, 10, "Saw");
                     }
                 break;
             }
