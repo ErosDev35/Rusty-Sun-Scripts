@@ -14,13 +14,19 @@ public class BodyPart : MonoBehaviour
     public float desinfectantApplied = 0;
     public float antibleedingApplied = 0;
     public Medicine medicineApplied = null;
+    public Transform bandageTransform = null;
     void Update()
     {
         Infection();
         Bleed();
         DesinfectantDecrease();
         AntiBleedingDecrease();
-    }    
+        Visualiser();
+    }
+    void Visualiser()
+    {
+        if(bandageTransform != null) bandageTransform.gameObject.SetActive(medicineApplied != null && medicineApplied.medicineType == "Bandaid");
+    }
     public bool ShouldBleed()
     {
         bool shouldBleed = isBleeding && (medicineApplied == null || medicineApplied.dirtynessRate >= 1f);

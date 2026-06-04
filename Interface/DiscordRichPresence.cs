@@ -14,14 +14,17 @@ public class DiscordRichPresence : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(discord != null)
         discord.RunCallbacks();
     }
     void OnDisable()
     {
+        if(discord != null)
         discord.Dispose();
     }
     void DiscordRich()
     {
+        if(discord != null){
         var activityManager = discord.GetActivityManager();
         var activity = new Discord.Activity
         {
@@ -31,5 +34,6 @@ public class DiscordRichPresence : MonoBehaviour
         {
             Debug.Log("Updated discord activity");
         });
+        }
     }
 }

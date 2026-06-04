@@ -101,6 +101,7 @@ public class GameInterface : MonoBehaviour
     private float maxTimeAction = 100;
     public Slider actionProgressBar;
     public string actionName;
+    private bool building = false;
     void Start()
     {
         bag.gameObject.SetActive(false);
@@ -189,30 +190,51 @@ public class GameInterface : MonoBehaviour
     void Pause()
     {
         cMCam.GetComponent<CinemachineVolumeSettings>().Profile = (gamePaused) ? pauseVolume : gameVolume;
+        pauseMenu.SetActive(gamePaused);
+        Time.timeScale = (gamePaused) ? 0 : 1;
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             bool shouldPause = true;
-            if (!playerComponent.LookingAtUi())
-            {
-                shouldPause = (playerComponent.preBuild || actionName != "")? false : true;
+            print("want to pause now");
+            if(playerComponent.preBuild || actionName != "") shouldPause = false;
+            if(playerComponent.LookingAtUi() && !gamePaused) shouldPause = false;
 
-                if(playerComponent.preBuild) playerComponent.preBuild = !playerComponent.preBuild;
+            print("should pause : " + shouldPause);
 
-                if(actionName != ""){
-                    StopCoroutine(WaitMethodLoop()); 
-                    actionName = "";
-                } 
+            if(playerComponent.preBuild) {
+                playerComponent.preBuild = false;
+                return;
             }
-            else
-            {
-                if(playerComponent.isLookingAtBag) playerComponent.isLookingAtBag = false;
+
+            if(actionName != ""){
+                StopCoroutine(WaitMethodLoop()); 
+                actionName = "";
+                return;
+            }
+
+            if(playerComponent.isLookingAtBag){ 
+                playerComponent.isLookingAtBag = false;
+                return;
+            }
+            if(playerComponent.wantToCheckBody){ 
+                playerComponent.wantToCheckBody = false;
+                return;
+            }
+            if(playerComponent.wantToCraft){ 
+                playerComponent.wantToCraft = false;
+                return;
+            }
+            if(playerComponent.wantToBuild){ 
+                playerComponent.wantToBuild = false;
+                return;
+            }
+            if(playerComponent.wantToHeal){ 
+                playerComponent.wantToHeal = false;
+                return;
             }
             gamePaused = shouldPause;
         }
-
-        pauseMenu.SetActive(gamePaused);
-        Time.timeScale = (gamePaused) ? 0 : 1;
     }
     void Visualizer()
     {
@@ -270,8 +292,8 @@ public class GameInterface : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(cMCam.transform.position, cMCam.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, levelMask))
             {
-                preBuildVisualizer.transform.position = hit.point + buildToBuild.buildOffset;
-                preBuildVisualizer.transform.localPosition = hit.point + buildToBuild.buildOffset;
+                preBuildVisualizer.transform.position = (building)? preBuildVisualizer.transform.position : hit.point + buildToBuild.buildOffset;
+                preBuildVisualizer.transform.localPosition = (building)? preBuildVisualizer.transform.localPosition : hit.point + buildToBuild.buildOffset;
 
                 Vector3 playerDirection = player.transform.position - preBuildVisualizer.transform.position;
                 Vector3 rotationTowards = Vector3.RotateTowards(preBuildVisualizer.transform.forward, playerDirection, 10000, 0.0f);
@@ -284,9 +306,9 @@ public class GameInterface : MonoBehaviour
 
                 print(rotationTowards);
 
-                preBuildVisualizer.transform.rotation = Quaternion.LookRotation(rotationTowards);
+                preBuildVisualizer.transform.rotation = (building)? preBuildVisualizer.transform.rotation : Quaternion.LookRotation(rotationTowards);
 
-                preBuildVisualizer.transform.localScale = buildToBuild.buildPrefab.transform.localScale;
+                preBuildVisualizer.transform.localScale = (building)? preBuildVisualizer.transform.localScale : buildToBuild.buildPrefab.transform.localScale;
 
                 preBuildVisualizer.GetComponent<MeshFilter>().mesh = (buildToBuild.buildPrefab.GetComponent<MeshFilter>())? buildToBuild.buildPrefab.GetComponent<MeshFilter>().sharedMesh : buildToBuild.buildPrefab.transform.GetChild(1).GetComponent<MeshFilter>().sharedMesh;
 
@@ -294,14 +316,19 @@ public class GameInterface : MonoBehaviour
 
                 preBuildVisualizer.GetComponent<MeshRenderer>().material = (canBuild) ? preBuildVisualizer.GetComponent<BuildPrevisualizer>().validBuild : preBuildVisualizer.GetComponent<BuildPrevisualizer>().invalidBuild;
 
-                if (Input.GetAxis("Mouse LC") != 0 && canBuild)
+                if (Input.GetAxis("Mouse LC") != 0 && canBuild && !building)
                 {
-                    var build = Instantiate(buildToBuild.buildPrefab);
-                    build.transform.position = hit.point + buildToBuild.buildOffset;
-                    build.transform.rotation = preBuildVisualizer.transform.rotation;
-                    playerComponent.preBuild = !playerComponent.preBuild;
-                    RemoveVegetationInRadius(build.transform.position, 1.75f, terrain);
-                    CraftBuild();
+                    building = true;
+                    void Build(){
+                        building = false;
+                        playerComponent.preBuild = !playerComponent.preBuild;
+                        var build = Instantiate(buildToBuild.buildPrefab);
+                        build.transform.position = hit.point + buildToBuild.buildOffset;
+                        build.transform.rotation = preBuildVisualizer.transform.rotation;
+                        RemoveVegetationInRadius(build.transform.position, 1.75f, terrain);
+                        CraftBuild();
+                    }
+                    RunMethodAfterActionTime(Build, 5, "Build");
                 }
             }
             if (playerComponent.wantToBuild) playerComponent.preBuild = false;
@@ -393,18 +420,22 @@ public class GameInterface : MonoBehaviour
 
         if (canCraft)
         {
-            foreach (var itemAsked in craft.craftNeeds)
-            {
-                int nbItemWanted = itemAsked.Value;
-                nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().slots, nbItemWanted, itemAsked.Key);
-                //nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().equippedSlots, nbItemWanted, itemAsked.Key);
-                print("reste " + nbItemWanted + " de " + itemAsked.Key);
+            void Craft(){
+                foreach (var itemAsked in craft.craftNeeds)
+                {
+                    int nbItemWanted = itemAsked.Value;
+                    nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().slots, nbItemWanted, itemAsked.Key);
+                    //nbItemWanted = nbItemWanted - DeleteCraftNeeds(playerComponent.inventory.GetComponent<Inventory>().equippedSlots, nbItemWanted, itemAsked.Key);
+                    print("reste " + nbItemWanted + " de " + itemAsked.Key);
+                }
+                playerComponent.inventory.GetComponent<Inventory>().AddItem(craft.itemToCraft);
             }
-            playerComponent.inventory.GetComponent<Inventory>().AddItem(craft.itemToCraft);
+            playerComponent.wantToCraft = false;
+            RunMethodAfterActionTime(Craft, 5, "Craft");
         }
         else print("on ne peut pas craft " + craft.itemToCraft.name);
     }
-    int howManyInventoryHave(string itemName)
+    public int howManyInventoryHave(string itemName)
     {
         int amountOfThatResource = 0;
 
@@ -427,7 +458,7 @@ public class GameInterface : MonoBehaviour
         print("on a " + amountOfThatResource + " de " + itemName);
         return amountOfThatResource;
     }
-    List<GameObject> WhichSlotWeTakeItemFrom(string itemName)
+    public List<GameObject> WhichSlotWeTakeItemFrom(string itemName)
     {
         List<GameObject> slots = new List<GameObject>();
 
@@ -542,9 +573,13 @@ public class GameInterface : MonoBehaviour
     {
         itemName.gameObject.SetActive(!playerComponent.isLookingAtBag);
         itemPlayerLooking = (playerComponent.itemLookingAt != null) ? playerComponent.itemLookingAt : (playerComponent.doorLookingAt != null) ? playerComponent.doorLookingAt : playerComponent.buildLookingAt;
-        itemName.text = (itemPlayerLooking != null) ? (playerComponent.itemLookingAt != null) ? itemPlayerLooking.GetComponent<Item>().itemName + ((itemPlayerLooking.GetComponent<Item>().itemNumber >= 2) ? " (" + itemPlayerLooking.GetComponent<Item>().itemNumber + ")" : "")
-        : (playerComponent.doorLookingAt != null) ? itemPlayerLooking.GetComponent<Door>().doorName :
-        itemPlayerLooking.GetComponent<Build>().buildName : "";
+        itemName.text = "";
+        
+        if((itemPlayerLooking != null)){
+            itemName.text = (playerComponent.itemLookingAt != null) ? itemPlayerLooking.GetComponent<Item>().itemName + ((itemPlayerLooking.GetComponent<Item>().itemNumber >= 2) ? " (" + itemPlayerLooking.GetComponent<Item>().itemNumber + ")" : "") : itemName.text;
+            itemName.text = (playerComponent.doorLookingAt != null) ? itemPlayerLooking.GetComponent<Door>().doorName : itemName.text;
+            itemName.text = (playerComponent.buildLookingAt != null)? itemPlayerLooking.GetComponent<Build>().buildName : itemName.text;
+        }
 
         string descriptor = (itemPlayerLooking != null) ? (itemPlayerLooking.GetComponent<Item>() != null) ? "[E] to grab" : (itemPlayerLooking.GetComponent<Door>() != null) ? "[E] to open" : "[E] to interact" : "";
         descriptor += (itemPlayerLooking != null && itemPlayerLooking.GetComponent<CustomItemBehaviour>()) ? " [F] " + itemPlayerLooking.GetComponent<CustomItemBehaviour>().GetDescriptorState() : "";
@@ -843,8 +878,14 @@ public class GameInterface : MonoBehaviour
                             medicineToApply.medicineType = slotMedecine.medicineType;
                             medicineToApply.dirtynessRate = slotMedecine.dirtynessRate;
 
-                            new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Bandaid")[0].transform);
-
+                            if(WhichSlotWeTakeItemFrom("Bandaid")[0].GetComponent<Item>().itemNumber > 1)
+                            {
+                                WhichSlotWeTakeItemFrom("Bandaid")[0].GetComponent<Item>().itemNumber -= 1;
+                            }
+                            else
+                            {
+                                new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Bandaid")[0].transform);
+                            }
                             bodyPartToCheck.medicineApplied = medicineToApply;
                         }
                         RunMethodAfterActionTime(Bandage, 5, "Bandage");
@@ -855,7 +896,14 @@ public class GameInterface : MonoBehaviour
                 if(notNormal){
                     void Desinfect(){
                         bodyPartToCheck.desinfectantApplied = 100;
-                        new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Alcool bottle")[0].transform);
+                            if (WhichSlotWeTakeItemFrom("Alcool bottle")[0].GetComponent<Item>().itemNumber > 1)
+                            {
+                                WhichSlotWeTakeItemFrom("Alcool bottle")[0].GetComponent<Item>().itemNumber -= 1;
+                            }
+                            else
+                            {
+                                new Inventory().RemoveItemComponent(WhichSlotWeTakeItemFrom("Alcool bottle")[0].transform);
+                            }
                     }
                     RunMethodAfterActionTime(Desinfect, 5, "Desinfect");
                 }

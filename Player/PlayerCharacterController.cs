@@ -49,6 +49,8 @@ public class PlayerCharacterController : MonoBehaviour
     public float timeBeforeJumpCancel = 0;
     bool onGround = true;
     public float tilting = 0;
+    private float tiltSmoothSpeed = 12f;
+    private Vector3 currentOffset;
     //.....................................................
 
     //Inventory / Item / Hands Section 
@@ -143,6 +145,7 @@ public class PlayerCharacterController : MonoBehaviour
         PlayerAudio();
         MeleeAttack();
         BodyPartDebuffGestion();
+        ReloadFirearm();
     }
     void Camera()
     {
@@ -154,7 +157,7 @@ public class PlayerCharacterController : MonoBehaviour
         addPan = (LookingAtUi() && (isLookingAtBag || wantToCheckBody)) ? addPan + ((150f * Time.deltaTime * Mathf.Abs(1 - bagAngle)) * panDirection) : 0;
         addPan = (gameInterface.bodyPartToCheck && (gameInterface.bodyPartToCheck.bodyPartName == "Right Leg" || gameInterface.bodyPartToCheck.bodyPartName == "Left Leg")) ? 40 : addPan;
 
-        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") + ((IsAiming()) ? Input.GetAxis("Tilt") * 3 : 0) * (tiltDegree * -1) + addTilt : addTilt);
+        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") + (tilting * 3) * (tiltDegree * -1) + addTilt : addTilt);
         Quaternion pan = Quaternion.Euler((!LookingAtUi()) ? Input.GetAxis("Vertical") * (panDegree) + addPan : addPan, 0, 0);
 
         if (!LookingAtUi())
@@ -197,14 +200,19 @@ public class PlayerCharacterController : MonoBehaviour
 
         RaycastHit hit;
 
-        float wallMultiplier = (Physics.Raycast(transform.position + new Vector3(0, 0.65f, 0), right * tilt, out hit, Vector3.Distance(transform.position + new Vector3(0, 0.65f, 0), transform.position + new Vector3(0, 0.65f, 0) + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain"))
-        || Physics.Raycast(transform.position + new Vector3(0, 1f, 0), right * tilt, out hit, Vector3.Distance(transform.position + new Vector3(0, 1f, 0), transform.position + new Vector3(0, 1f, 0) + right * (tilt * 1.15f)), LayerMask.GetMask("Terrain"))) ?
-        Mathf.Clamp(hit.distance, 0, 1) - 0.2f : 1;
+        float wallMultiplier = (Physics.Raycast(transform.position + new Vector3(0, 0.65f, 0), right * tilt, out hit, Mathf.Abs(tilt * 1.15f), LayerMask.GetMask("Terrain", "Door")) 
+        || Physics.Raycast(transform.position + new Vector3(0, 1f, 0), right * tilt, out hit, Mathf.Abs(tilt * 1.15f), LayerMask.GetMask("Terrain", "Door"))) ? 
+        Mathf.Clamp(hit.distance, 0, 1) - 0.2f: 1;
 
-        Vector3 offset = (IsAiming()) ? right * tilt * wallMultiplier : Vector3.zero;
-        offset.y = 0.9f;
+        Vector3 targetOffset = (IsAiming()) ? right * tilt * wallMultiplier : Vector3.zero;
 
-        cMPositionComposer.TargetOffset = offset;
+        targetOffset.y = 0.9f;
+
+        currentOffset = Vector3.Lerp(currentOffset,targetOffset,tiltSmoothSpeed * Time.deltaTime);
+
+        tilting = Vector3.Dot(currentOffset, right);
+
+        cMPositionComposer.TargetOffset = currentOffset;
     }
     void ShouldKeepSliding()
     {
@@ -378,14 +386,11 @@ public class PlayerCharacterController : MonoBehaviour
 
         mouseScroll = Input.GetAxis("Mouse ScrollWheel");
 
+        int oldHandChoice = handItemChoice;
+
         if (mouseScroll != 0)
         {
             itemChoice = (mouseScroll < 0) ? 1 : -1;
-            gameInterface.ShowUpHotbar();
-            gameInterface.ShowUpHotbar();
-
-            gameInterface.HandItemDisplayUpdate();
-
         }
         else itemChoice = 0;
 
@@ -403,6 +408,11 @@ public class PlayerCharacterController : MonoBehaviour
         if (!isLookingAtBag && Input.GetAxis("Mouse LC") != 0 && handItem != null && handItem.itemUsage != null)
         {
             handItem.itemUsage.ItemUse(handsItems[handItemChoice].GetChild(0).GetComponent<Slot>(), handItem, GetComponent<PlayerCharacterController>());
+        }
+        if(handItemChoice != oldHandChoice)
+        {
+            gameInterface.ShowUpHotbar();
+            gameInterface.HandItemDisplayUpdate();
         }
     }
     public bool IsAiming()
@@ -748,7 +758,10 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void BodyPartDebuffGestion()
     {
+        GameInterface gameInterface = GameInterface.Instance;
         float speedBaseDebuff = 100f;
+
+        speedBaseDebuff -= (gameInterface.actionName != "")? 25 : 0;
         //float meleeDamageBaseDebuff = 100f;
         //float meleeSpeedBaseDebuff = 100f;
 
@@ -773,5 +786,43 @@ public class PlayerCharacterController : MonoBehaviour
             }
         }
         return null;
+    }
+    void ReloadFirearm()
+    {
+        if(Input.GetKeyDown("r"))
+        {
+            if(handItem && handItem.firearm)
+            {
+                if(handItem.firearm.ammo >= handItem.firearm.maxAmmo)
+                {
+                    print("on ne peut pas recharger bouffon");
+                    return;
+                }
+
+                GameInterface gameInterface = GameInterface.Instance;
+                int ammoInInventory = gameInterface.howManyInventoryHave(handItem.firearm.ammoName);
+
+                if (ammoInInventory > 0)
+                {
+                    void reload(){
+                        int ammoToReload = Mathf.Clamp(ammoInInventory, 0, handItem.firearm.maxAmmo - handItem.firearm.ammo);
+                        if (gameInterface.WhichSlotWeTakeItemFrom(handItem.firearm.ammoName)[0].GetComponent<Item>().itemNumber > ammoToReload)
+                        {
+                            gameInterface.WhichSlotWeTakeItemFrom(handItem.firearm.ammoName)[0].GetComponent<Item>().itemNumber -= ammoToReload;
+                        }
+                        else
+                        {
+                            new Inventory().RemoveItemComponent(gameInterface.WhichSlotWeTakeItemFrom(handItem.firearm.ammoName)[0].transform);
+                        }
+                        handItem.firearm.ammo += ammoToReload;
+                    }
+                    gameInterface.RunMethodAfterActionTime(reload, 5, "reloading" + handItem.firearm.name);
+                }
+            }
+            else
+            {
+                print("on ne peut pas recharger ça ");
+            }
+        }
     }
 }

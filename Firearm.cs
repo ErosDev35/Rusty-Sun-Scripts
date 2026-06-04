@@ -14,7 +14,6 @@ public class Firearm : Weapon
     public float muzzleFlashDistance = 1;
     public Transform muzzleFlashParticle;
     public double reloadingTime;
-
     public IEnumerator bulletShellEject(Transform player, Transform cMCam, float time)
     {
         yield return new WaitForSeconds(time);
