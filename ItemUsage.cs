@@ -3,6 +3,7 @@ using System.Collections;
 using Unity.VisualScripting.AssemblyQualifiedNameParser;
 using System.Collections.Generic;
 using System;
+using AYellowpaper.SerializedCollections;
 
 public class ItemUsage : MonoBehaviour
 {

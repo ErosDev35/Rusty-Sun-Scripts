@@ -102,8 +102,11 @@ public class GameInterface : MonoBehaviour
     public Slider actionProgressBar;
     public string actionName;
     private bool building = false;
+    public Transform playerArms;
+    PlayerInputs playerInputs;
     void Start()
     {
+        playerInputs = PlayerInputs.Instance;
         bag.gameObject.SetActive(false);
         player = GameObject.Find("Player");
         Cursor.lockState = CursorLockMode.Locked;
@@ -176,7 +179,7 @@ public class GameInterface : MonoBehaviour
     }
     void changeSlotColor(GameObject slot, Inventory bag)
     {
-        if (bag.ItemSelectedSlot.slotItem != null)
+        if (bag.ItemSelectedSlot != null && bag.ItemSelectedSlot.slotItem != null)
         {
             slot.GetComponent<Image>().color = (bag.TypeCorrespondanceCheck(bag.ItemSelectedSlot.slotItem, slot.GetComponent<Slot>().item_type) || slot.GetComponent<Slot>().item_type == "any")
             ? new Color(0.65f, 0.65f, 0.65f) : ColorTransition(new Color(0.65f, 0.65f, 0.65f), new Color(0.85f, 0, 0), 50 / Vector2.Distance(slot.transform.position, Input.mousePosition) + 0.5f);
@@ -193,7 +196,7 @@ public class GameInterface : MonoBehaviour
         pauseMenu.SetActive(gamePaused);
         Time.timeScale = (gamePaused) ? 0 : 1;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (playerInputs.escapeInput)
         {
             bool shouldPause = true;
             print("want to pause now");
@@ -316,7 +319,7 @@ public class GameInterface : MonoBehaviour
 
                 preBuildVisualizer.GetComponent<MeshRenderer>().material = (canBuild) ? preBuildVisualizer.GetComponent<BuildPrevisualizer>().validBuild : preBuildVisualizer.GetComponent<BuildPrevisualizer>().invalidBuild;
 
-                if (Input.GetAxis("Mouse LC") != 0 && canBuild && !building)
+                if (playerInputs.leftClickMaintainInput && canBuild && !building)
                 {
                     building = true;
                     void Build(){
@@ -535,12 +538,9 @@ public class GameInterface : MonoBehaviour
         bag.gameObject.SetActive(playerComponent.isLookingAtBag);
         foreach (Transform child in bag) child.gameObject.SetActive(playerComponent.isLookingAtBag);
 
-        if (playerComponent.isLookingAtBag && !playerComponent.wantToHeal)
-        {
-            itemSelectedCursor.transform.position = Input.mousePosition;
-            itemSelectedCursor.GetComponent<Image>().color = new Color(1, 1, 1, 0);
-            itemSelectedCursor.GetChild(0).GetComponent<Image>().color = (playerComponent.inventory.GetComponent<Inventory>().ItemSelectedSlot.slotItem == null) ? new Color(1, 1, 1, 0) : new Color(1, 1, 1, 1);
-        }
+        itemSelectedCursor.transform.position = Input.mousePosition;
+        itemSelectedCursor.GetComponent<Image>().color = new Color(1, 1, 1, 0);
+        itemSelectedCursor.GetChild(0).GetComponent<Image>().color = (playerComponent.inventory.GetComponent<Inventory>().ItemSelectedSlot.slotItem == null) ? new Color(1, 1, 1, 0) : new Color(1, 1, 1, 1);
         Transform containerTransform = otherTab.parent;
         containerTransform.GetComponent<Image>().color = (!mainTab)? new Color(255,255,255,0) : new Color(255,255,255,255);
 
@@ -681,7 +681,7 @@ public class GameInterface : MonoBehaviour
             itemHealthMenuImage.sprite = playerComponent.handItem.inventoryImage;
             itemHealthMenuText.text = playerComponent.handItem.itemName;
 
-            if (Input.GetAxis("Mouse LC") == 0)
+            if (playerInputs.leftClickMaintainInput)
             {
                 playerComponent.wantToHeal = false;
                 print(nearestBodyPart);
@@ -822,14 +822,16 @@ public class GameInterface : MonoBehaviour
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.Mouse0))
+            if (playerInputs.leftClickInput)
             {
+                playerInputs.leftClickInput = false;
                 //contextMenuCheckBody.gameObject.SetActive(false);
                 if (nearestBodyPart) bodyPartToCheck = FindBodyPart(nearestBodyPart.name);
             }
 
-            if (bodyPartToCheck && Input.GetKeyDown(KeyCode.Mouse1))
+            if (bodyPartToCheck && playerInputs.rightClickInput)
             {
+                playerInputs.rightClickInput = false;
                 contextMenuCheckBody.gameObject.SetActive(!contextMenuCheckBody.gameObject.activeSelf);
                 contextMenuCheckBody.position = Input.mousePosition;
             }

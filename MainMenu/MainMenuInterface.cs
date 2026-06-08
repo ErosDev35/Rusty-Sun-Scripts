@@ -34,11 +34,13 @@ namespace AYellowpaper.SerializedCollections
         string saveFile;
         string worldFiles;
         public ItemCatalogue itemCatalogue;
+        public Keybinds keybinds;
         void Start()
         {
             Cursor.lockState = CursorLockMode.None;
             saveFile = Application.persistentDataPath + "/gameoptions.data";
             worldFiles = Application.persistentDataPath + "/world";
+            keybinds = new Keybinds();
             initLoading();
         }
         void Update()
@@ -60,6 +62,7 @@ namespace AYellowpaper.SerializedCollections
                 print("Fichier option non trouvé, création d'un fichier.. ");
                 LoadOptionData(WriteNewOptionData());
             }
+            print(keybinds.keybinds);
         }
         OptionData WriteNewOptionData(OptionData optionData = null)
         {
@@ -91,6 +94,7 @@ namespace AYellowpaper.SerializedCollections
 
                 consoleLogStr += state.Key + " : " + optionDataValue + "; ";
             }
+            keybinds.keybinds = optionData.keybindings;
             print(consoleLogStr);
             OptionReloadApplication(optionData);
         }
@@ -115,6 +119,7 @@ namespace AYellowpaper.SerializedCollections
                 var option = type.GetField(state.Key, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
                 option.SetValue(optionData, value);
             }
+
             WriteNewOptionData(optionData);
             print(consoleLogStr);
             if (gameInterface) gameInterface.OptionInit(optionData);

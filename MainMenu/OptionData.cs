@@ -18,7 +18,7 @@ public class OptionData
     public float dithering = 1;
     public float chromaticAberration = 1;
     public float language = 1;
-    public List<string> keybindings = new List<string>();
+    public Dictionary<string, KeyCode> keybindings = new Dictionary<string, KeyCode>() {{"forward", KeyCode.Z}, {"backward", KeyCode.S}, {"left", KeyCode.Q}, {"right", KeyCode.D}, {"main action", KeyCode.Mouse0}, {"aim", KeyCode.Mouse1}};
     public Dictionary<int, Vector2Int> screenResolutionDict = new Dictionary<int, Vector2Int>()
     { { 0, new Vector2Int(1920, 1080) }, { 1, new Vector2Int(1366, 768) }, { 2, new Vector2Int(1280, 720) } };
     public Dictionary<int, FullScreenMode> screenModeDict = new Dictionary<int, FullScreenMode>()

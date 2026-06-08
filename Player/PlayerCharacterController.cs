@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using System;
 using Unity.VisualScripting;
 using System.Collections;
+using NUnit.Framework.Constraints;
 
 public class PlayerCharacterController : MonoBehaviour
-{
+{   
+    //.....................................................
+
     //Physics Section
     private float gravityValue = -9.81f;
     private CharacterController controller;
@@ -23,6 +26,7 @@ public class PlayerCharacterController : MonoBehaviour
     //.....................................................
 
     //Movements Section
+    PlayerInputs playerInputs;
     public float speed = 50f;
     public float speedDebuff = 100;
     public float sprintMultiplier = 1;
@@ -57,7 +61,7 @@ public class PlayerCharacterController : MonoBehaviour
     LayerMask itemsMask;
     public GameObject itemLookingAt;
     public bool isLookingAtBag = false;
-    public GameObject inventory;
+    public Inventory inventory;
     public double weight;
     public List<Transform> handsItems;
     public Item handItem;
@@ -102,6 +106,8 @@ public class PlayerCharacterController : MonoBehaviour
     //.....................................................
     void Start()
     {
+        playerInputs = GetComponent<PlayerInputs>();
+        playerInputs.player = this;
         itemsMask = LayerMask.GetMask("Item");
         doorsMask = LayerMask.GetMask("Door");
         buildMask = LayerMask.GetMask("Build");
@@ -110,7 +116,7 @@ public class PlayerCharacterController : MonoBehaviour
         layerMaskGround = LayerMask.GetMask("Ground");
         cMChannelPerlin = cMCam.GetComponent<CinemachineBasicMultiChannelPerlin>();
         cMPositionComposer = cMCam.GetComponent<CinemachinePositionComposer>();
-        inventory = GameObject.Find("Bag");
+        inventory = GameObject.Find("Bag").GetComponent<Inventory>();
     }
 
     // Update is called once per frame
@@ -134,7 +140,6 @@ public class PlayerCharacterController : MonoBehaviour
         Move();
         Camera();
         Stamina();
-        BagCheck();
         StatusCheck();
         Starving();
         EjectItem();
@@ -146,6 +151,9 @@ public class PlayerCharacterController : MonoBehaviour
         MeleeAttack();
         BodyPartDebuffGestion();
         ReloadFirearm();
+
+        playerInputs.interactInput = false;
+        playerInputs.leftClickInput = false;
     }
     void Camera()
     {
@@ -157,13 +165,13 @@ public class PlayerCharacterController : MonoBehaviour
         addPan = (LookingAtUi() && (isLookingAtBag || wantToCheckBody)) ? addPan + ((150f * Time.deltaTime * Mathf.Abs(1 - bagAngle)) * panDirection) : 0;
         addPan = (gameInterface.bodyPartToCheck && (gameInterface.bodyPartToCheck.bodyPartName == "Right Leg" || gameInterface.bodyPartToCheck.bodyPartName == "Left Leg")) ? 40 : addPan;
 
-        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? Input.GetAxis("Horizontal") + (tilting * 3) * (tiltDegree * -1) + addTilt : addTilt);
-        Quaternion pan = Quaternion.Euler((!LookingAtUi()) ? Input.GetAxis("Vertical") * (panDegree) + addPan : addPan, 0, 0);
+        Quaternion tilt = Quaternion.Euler(0, 0, (!LookingAtUi()) ? playerInputs.currentInputVector.x + (tilting * 3) * (tiltDegree * -1) + addTilt : addTilt);
+        Quaternion pan = Quaternion.Euler((!LookingAtUi()) ? playerInputs.currentInputVector.y * (panDegree) + addPan : addPan, 0, 0);
 
         if (!LookingAtUi())
         {
-            rotation.x += Input.GetAxis("Mouse X") * mouseSentivity;
-            rotation.y += Input.GetAxis("Mouse Y") * mouseSentivity;
+            rotation.x += playerInputs.camInput.x * (mouseSentivity / 100);
+            rotation.y += playerInputs.camInput.y * (mouseSentivity / 100);
 
             rotation.y = Mathf.Clamp(rotation.y, -yRotationLimit, yRotationLimit);
         }
@@ -174,6 +182,7 @@ public class PlayerCharacterController : MonoBehaviour
         cMCam.localRotation = xQuat * yQuat;
 
         cMCam.transform.rotation = (cMCam.transform.rotation * tilt) * (pan * Quaternion.Euler(firearmKnockback * -1, 0, 0));
+        gameInterface.playerArms.transform.localPosition = new Vector3(0,-0.25f,Mathf.Clamp(-firearmKnockback * 0.05f,-0.5f,0));
 
         transform.rotation = Quaternion.Euler(0, cMCam.transform.rotation.y, cMCam.transform.rotation.z);
 
@@ -195,7 +204,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void CamTilt()
     {
-        float tilt = Input.GetAxis("Tilt");
+        float tilt = playerInputs.tiltInput;
         Vector3 right = Vector3.ProjectOnPlane(cMCam.right, Vector3.up).normalized;
 
         RaycastHit hit;
@@ -229,8 +238,9 @@ public class PlayerCharacterController : MonoBehaviour
 
         //On récupère les input du joueur
 
-        Vector2 input = (LookingAtUi())? Vector2.zero : new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-        Vector3 move = new Vector3(input.x, 0, input.y);
+        Vector2 input = (LookingAtUi())? Vector2.zero : playerInputs.moveInput;
+        playerInputs.currentInputVector = Vector2.SmoothDamp(playerInputs.currentInputVector, input, ref playerInputs.smoothInputVelocity, .2f);
+        Vector3 move = new Vector3(playerInputs.currentInputVector.x, 0, playerInputs.currentInputVector.y);
 
         // Génération IA je suis tellement désolé mais je le savais pas comment faire
         Vector3 forward = Vector3.ProjectOnPlane(cMCam.forward, Vector3.up).normalized;
@@ -272,7 +282,7 @@ public class PlayerCharacterController : MonoBehaviour
         if (isRunning())
         {
             stamina += (staminaConsumption * Time.deltaTime) * 10;
-            sprintMultiplierApplied = sprintMultiplier * Input.GetAxis("Sprint");
+            sprintMultiplierApplied = sprintMultiplier * ((playerInputs.sprintInput)? 1 : 0);
         }
         else
         {
@@ -300,7 +310,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Jump()
     {
-        onGround = groundedPlayer || Physics.Raycast(transform.position + new Vector3(0, -1, 0), transform.TransformDirection(Vector3.down), 0.25f, LayerMask.GetMask("Terrain"));
+        onGround = groundedPlayer || Physics.Raycast(transform.position + new Vector3(0, -1, 0), transform.TransformDirection(Vector3.down), 0.1f, LayerMask.GetMask("Terrain"));
         if (isJumping() && (onGround || timeBeforeJumpCancel < 0.4f))
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -2.0f * gravityValue);
@@ -309,11 +319,11 @@ public class PlayerCharacterController : MonoBehaviour
 
         timeBeforeJumpCancel = (!onGround) ? timeBeforeJumpCancel + Time.deltaTime : 0;
     }
-    void BagCheck()
+    public void BagCheck()
     {
         GameInterface gameInterface = GameInterface.Instance;
 
-        if (Input.GetKeyDown("tab") && !preBuild && Mathf.Abs(playerVelocity.y) < 0.4f && (!LookingAtUi() || LookingAtUi() && isLookingAtBag))
+        if ((!preBuild && (Mathf.Abs(playerVelocity.y) < 0.4f || groundedPlayer) && !LookingAtUi()) || (LookingAtUi() && isLookingAtBag))
         {
             isLookingAtBag = !isLookingAtBag;
             gameInterface.mainTab = true;
@@ -341,7 +351,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void DoorCheck()
     {
-        if (isLookingAtADoor() && Input.GetKeyDown("e"))
+        if (isLookingAtADoor() && playerInputs.interactInput)
         {
             Door door = doorLookingAt.GetComponent<Door>();
             door.doorOpen = !door.doorOpen;
@@ -352,12 +362,12 @@ public class PlayerCharacterController : MonoBehaviour
     {
         if (isLookingAtAnItem())
         {
-            if (Input.GetKeyDown("e"))
+            if (playerInputs.interactInput)
             {
                 Inventory inventorySystem = inventory.GetComponent<Inventory>();
                 inventorySystem.AddItem(itemLookingAt);
             }
-            if (Input.GetKeyDown("f") && itemLookingAt.GetComponent<CustomItemBehaviour>())
+            if (playerInputs.outsideInteractInput && itemLookingAt.GetComponent<CustomItemBehaviour>())
             {
                 itemLookingAt.GetComponent<ItemUsage>().ItemUse(null, itemLookingAt.GetComponent<Item>(), this);
             }
@@ -365,7 +375,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void BuildCheck()
     {
-        if (isLookingAtABuild() && Input.GetKeyDown("e"))
+        if (isLookingAtABuild() && playerInputs.interactInput)
         {
             buildLookingAt.GetComponent<BuildUsage>().BuildUse();
         }
@@ -384,7 +394,7 @@ public class PlayerCharacterController : MonoBehaviour
         float mouseScroll = 0;
         int itemChoice = 0;
 
-        mouseScroll = Input.GetAxis("Mouse ScrollWheel");
+        mouseScroll = playerInputs.scrollInput;
 
         int oldHandChoice = handItemChoice;
 
@@ -396,16 +406,19 @@ public class PlayerCharacterController : MonoBehaviour
 
         handItemChoice += itemChoice;
 
-        if (Input.GetKey(KeyCode.Alpha1)) handItemChoice = 0;
-        if (Input.GetKey(KeyCode.Alpha2)) handItemChoice = 1;
-        if (Input.GetKey(KeyCode.Alpha3)) handItemChoice = 2;
+        if (playerInputs.slot1Input) handItemChoice = 0;
+        playerInputs.slot1Input = false;
+        if (playerInputs.slot2Input) handItemChoice = 1;
+        playerInputs.slot2Input = false;
+        if (playerInputs.slot3Input) handItemChoice = 2;
+        playerInputs.slot3Input = false;
 
         if (handItemChoice > handsItems.Count - 1) handItemChoice = 0;
         else if (handItemChoice < 0) handItemChoice = handsItems.Count - 1;
 
         handItem = handsItems[handItemChoice].GetChild(0).GetComponent<Slot>().slotItem;
 
-        if (!isLookingAtBag && Input.GetAxis("Mouse LC") != 0 && handItem != null && handItem.itemUsage != null)
+        if (!isLookingAtBag && playerInputs.leftClickMaintainInput && handItem != null && handItem.itemUsage != null)
         {
             handItem.itemUsage.ItemUse(handsItems[handItemChoice].GetChild(0).GetComponent<Slot>(), handItem, GetComponent<PlayerCharacterController>());
         }
@@ -417,7 +430,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public bool IsAiming()
     {
-        return Input.GetAxis("Mouse RC") != 0 && !LookingAtUi();
+        return playerInputs.rightClickInput && !LookingAtUi();
     }
     void Starving()
     {
@@ -433,8 +446,9 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void EjectItem()
     {
-        if (Input.GetKeyDown("q") && !IsAiming())
+        if (playerInputs.dropInput && !IsAiming())
         {
+            playerInputs.dropInput = false;
             if (isLookingAtBag)
             {
                 Slot slotToEject;
@@ -464,7 +478,7 @@ public class PlayerCharacterController : MonoBehaviour
         }
         else
         {
-            controller.height = 2 - (0.6f * Input.GetAxis("Crouch") * ((Physics.Raycast(transform.position, transform.up * -1, 1.2f))? 1 : 0));
+            controller.height = 2 - (0.6f * ((playerInputs.crouchInput)? 1 : 0) * ((Physics.Raycast(transform.position, transform.up * -1, 1.2f))? 1 : 0));
         }
         Debug.DrawRay(transform.position, transform.up * 1.2f, Color.red);
         return controller.height != 2;
@@ -507,14 +521,14 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public bool isRunning()
     {
-        bool running = ((Input.GetAxis("Sprint") != 0 && stamina < maxStamina) && !outOfBreath && !IsFalling() && speedDebuff > 40f);
+        bool running = ((playerInputs.sprintInput && stamina < maxStamina) && !outOfBreath && !IsFalling() && speedDebuff > 40f);
         running = (running && !(isCrouching() && sliding) && !IsAiming()) ? (inputMove.x != 0 || inputMove.z != 0) : false;
         running = (LookingAtUi()) ? false : running;
         return running;
     }
     bool isJumping()
     {
-        return Input.GetAxis("Jump") != 0;
+        return playerInputs.jumpInput;
     }
     // ptite formule arduino tu coco :p v2
     float map(float x, float in_min, float in_max, float out_min, float out_max)
@@ -662,11 +676,15 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void Build()
     {
-        wantToBuild = ((Input.GetKeyDown("v") && ((!LookingAtUi()) || (LookingAtUi() && wantToBuild))) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToBuild)) ? !wantToBuild : wantToBuild;
+        wantToBuild = ((playerInputs.buildInput && ((!LookingAtUi()) || (LookingAtUi() && wantToBuild))) || playerInputs.escapeInput && (LookingAtUi() && wantToBuild)) ? !wantToBuild : wantToBuild;
+        playerInputs.buildInput = false;
+        playerInputs.escapeInput = (playerInputs.escapeInput)? false : playerInputs.escapeInput;
     }
     void Craft()
     {
-        wantToCraft = ((Input.GetKeyDown("c") && ((!LookingAtUi()) || (LookingAtUi() && wantToCraft))) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToCraft)) ? !wantToCraft : wantToCraft;
+        wantToCraft = ((playerInputs.craftInput && ((!LookingAtUi()) || (LookingAtUi() && wantToCraft))) || playerInputs.escapeInput && (LookingAtUi() && wantToCraft)) ? !wantToCraft : wantToCraft;
+        playerInputs.craftInput = false;
+        playerInputs.escapeInput = (playerInputs.escapeInput)? false : playerInputs.escapeInput;
     }
     public bool LookingAtUi()
     {
@@ -684,7 +702,9 @@ public class PlayerCharacterController : MonoBehaviour
     {
         GameInterface gameInterface = GameInterface.Instance;
 
-        bool checkBody = (((Input.GetKeyDown("h") && !isLookingAtBag && !wantToHeal) && onGround) || Input.GetKeyDown("escape") && (LookingAtUi() && wantToCheckBody)) ? !wantToCheckBody : wantToCheckBody;
+        bool checkBody = (((playerInputs.checkBodyInput && !isLookingAtBag && !wantToHeal) && onGround) || playerInputs.escapeInput && (LookingAtUi() && wantToCheckBody)) ? !wantToCheckBody : wantToCheckBody;
+        playerInputs.checkBodyInput = false;
+        playerInputs.escapeInput = (playerInputs.escapeInput)? false : playerInputs.escapeInput;
         if (checkBody != wantToCheckBody) gameInterface.bodyPartToCheck = playerHealth.bodyParts[2];
         wantToCheckBody = checkBody;
     }
@@ -729,7 +749,7 @@ public class PlayerCharacterController : MonoBehaviour
     }
     public void MeleeAttack(float damage = 1, bool meleeWeapon = false)
     {
-        if (!LookingAtUi() && Input.GetKeyDown(KeyCode.Mouse0) && ((!handItem && !onMeleeCooldown) || meleeWeapon))
+        if (!LookingAtUi() && playerInputs.leftClickInput && ((!handItem && !onMeleeCooldown) || meleeWeapon))
         {
             SendMeleeDamage(damage);
 
@@ -789,8 +809,9 @@ public class PlayerCharacterController : MonoBehaviour
     }
     void ReloadFirearm()
     {
-        if(Input.GetKeyDown("r"))
+        if(playerInputs.reloadInput)
         {
+            playerInputs.reloadInput = false;
             if(handItem && handItem.firearm)
             {
                 if(handItem.firearm.ammo >= handItem.firearm.maxAmmo)

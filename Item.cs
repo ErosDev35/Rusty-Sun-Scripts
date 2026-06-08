@@ -20,6 +20,7 @@ public class Item : MonoBehaviour
     public Medicine medicine = null;
     public CustomItemBehaviour customItemBehaviour = null;
     public MeleeWeapon meleeWeapon = null;
+    public Attachement attachement = null;
     public Material itemMaterial;
     public bool twoHanded = false;
     public bool oneHanded = false;

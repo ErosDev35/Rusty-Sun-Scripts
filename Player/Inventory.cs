@@ -1,9 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using AYellowpaper.SerializedCollections;
 
 public class Inventory : MonoBehaviour
 {
+    PlayerInputs playerInputs;
     public Dictionary<string, Vector4> bags = new Dictionary<string, Vector4>();
     public string bagWear = "Hands";
     public string bagWearOld = "";
@@ -25,6 +27,7 @@ public class Inventory : MonoBehaviour
     public GameObject bag;
     void Start()
     {
+        playerInputs = PlayerInputs.Instance;
         player = GameObject.Find("Player").transform;
         bags.Add("Hands", new Vector4(0, 0, 0, 1));
         bags.Add("Survivor bag", new Vector4(6, 6, 6, 6));
@@ -286,6 +289,7 @@ public class Inventory : MonoBehaviour
         Medicine medicine = (itemGrab.medicine != null) ? slot.AddComponent<Medicine>() : null;
         CustomItemBehaviour customItemBehaviour = (itemGrab.customItemBehaviour != null) ? slot.AddComponent<CustomItemBehaviour>() : null;
         MeleeWeapon meleeWeapon = (itemGrab.meleeWeapon != null) ? slot.AddComponent<MeleeWeapon>() : null;
+        Attachement attachement = (itemGrab.attachement != null)? slot.AddComponent<Attachement>() : null; 
 
         AudioSource audioSource = (itemGrab.GetComponent<AudioSource>()) ? (slot.transform.parent) ? slot.AddComponent<AudioSource>() : slot.GetComponent<AudioSource>() : null;
 
@@ -387,13 +391,19 @@ public class Inventory : MonoBehaviour
             meleeWeapon.damage = itemGrab.meleeWeapon.damage;
             meleeWeapon.canShoot = true;
         }
+        if (attachement)
+        {
+            attachement.attachementType = itemGrab.attachement.attachementType;
+            attachement.attachements = itemGrab.attachement.attachements;
+            attachement.attachementModel = itemGrab.attachement.attachementModel;
+        }
 
         return item;
     }
     public void AllUpdate()
     {
         InventoryTabsGestion();
-
+        
         double tempArmor = 0;
         double tempThermal = 0;
 
@@ -492,7 +502,7 @@ public class Inventory : MonoBehaviour
     }
     public void UsingItems()
     {
-        if (hoveredSlot != null && Input.GetKeyDown("e") && hoveredSlot.slotItem != null)
+        if (hoveredSlot != null && playerInputs.interactInput && hoveredSlot.slotItem != null)
         {
             if (hoveredSlot.slotItem.itemUsage != null)
             {
